@@ -10,6 +10,7 @@ namespace GameTemplate.Runtime
         [SerializeField] private float time;
         [SerializeField] private bool delayOnStart;
         public UnityEvent OnDelayCompleted;
+        public Coroutine delayCoroutine;
         private void Start()
         {
             if (delayOnStart)
@@ -20,7 +21,19 @@ namespace GameTemplate.Runtime
 
         public void StarDelay()
         {
-            StartCoroutine(DelayCoroutine());
+            if (delayCoroutine != null)
+            {
+                StopCoroutine(delayCoroutine);
+            }
+            delayCoroutine = StartCoroutine(DelayCoroutine());
+        }
+
+        public void StopDelay()
+        {
+            if (delayCoroutine != null)
+            {
+                StopCoroutine(delayCoroutine);
+            }
         }
         
         private IEnumerator DelayCoroutine()
