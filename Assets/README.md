@@ -1,4 +1,4 @@
-# Kane Template
+# Game Template
 
 A comprehensive Unity game development template that provides essential systems for building games quickly and efficiently.
 

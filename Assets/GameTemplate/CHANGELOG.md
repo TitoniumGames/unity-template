@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2024-01-01
 
 ### Added
-- Initial release of Kane Template
+- Initial release of Game Template
 - Core game management systems (GameManager, LevelManager, PlayerData)
 - Event system with EventManager and interfaces
 - Level data system with JSON support

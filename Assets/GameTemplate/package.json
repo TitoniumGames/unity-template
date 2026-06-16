@@ -1,5 +1,5 @@
 {
-  "name": "com.kane.unity-template",
+  "name": "com.tito.unity-template",
   "version": "1.0.3",
   "displayName": "Unity Template",
   "description": "A comprehensive game development template with core systems and event management",
@@ -16,23 +16,23 @@
     "manager"
   ],
   "author": {
-    "name": "Kane",
-    "email": "dqkhanh.2k@gmail.com",
-    "url": "https://github.com/dqkhanh2000"
+    "name": "Tito Studio",
+    "email": "vankieen99@gmail.com",
+    "url": "https://github.com/kieennv99"
   },
   "samples": [
     {
       "displayName": "Basic Game Template",
-      "description": "Basic example showing how to use the Kane Template systems",
+      "description": "Basic example showing how to use the Game Template systems",
       "path": "Example"
     }
   ],
-  "documentationUrl": "https://github.com/dqkhanh2000/unity-template",
-  "changelogUrl": "https://github.com/dqkhanh2000/unity-template/blob/main/CHANGELOG.md",
-  "licensesUrl": "https://github.com/dqkhanh2000/unity-template/blob/main/LICENSE",
+  "documentationUrl": "https://github.com/TitoniumGames/unity-template",
+  "changelogUrl": "https://github.com/TitoniumGames/unity-template/blob/main/CHANGELOG.md",
+  "licensesUrl": "https://github.com/TitoniumGames/unity-template/blob/main/LICENSE",
   "repository": {
     "type": "git",
-    "url": "https://github.com/dqkhanh2000/unity-template.git"
+    "url": "https://github.com/TitoniumGames/unity-template.git"
   },
   "publishConfig": {
     "registry": "https://npm.pkg.github.com"

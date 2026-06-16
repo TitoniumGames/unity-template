@@ -97,7 +97,7 @@ namespace GameTemplate.Editor
         {
             EditorUtility.DisplayDialog(
                 "Game Template", 
-                "Game Template v1.0.0\n\nA comprehensive Unity game development template with core systems and event management.\n\nCreated by Kane", 
+                "Game Template v1.0.0\n\nA comprehensive Unity game development template with core systems and event management.\n", 
                 "OK"
             );
         }
