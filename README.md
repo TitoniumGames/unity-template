@@ -15,7 +15,7 @@ Open **Window → Package Manager**
 Click **+ → Add package from Git URL**
 
 ```
-https://github.com/TitoniumGames/unity-installer.git?path=/Assets/Installer
+https://github.com/TitoniumGames/unity-template.git?path=/Assets/Installer
 ```
 
 Click **Add**.
