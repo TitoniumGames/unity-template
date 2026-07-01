@@ -1,7 +1,7 @@
 ﻿using UnityEditor;
 using UnityEngine;
 
-namespace GameTemplate.Editor.Validator
+namespace Installer.Editor.Validator
 {
     public class FrameworkValidatorWindow : EditorWindow
     {

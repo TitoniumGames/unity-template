@@ -4,7 +4,7 @@ using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
-namespace GameTemplate.Editor.Validator
+namespace Installer.Editor.Validator
 {
     [InitializeOnLoad]
     public static class FrameworkValidator

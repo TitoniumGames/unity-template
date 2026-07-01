@@ -1,0 +1,22 @@
+{
+  "name": "com.tito.unity-installer",
+  "version": "1.0.3",
+  "displayName": "Unity Installer",
+  "description": "A comprehensive game development template with core systems and event management",
+  "unity": "2022.3",
+  "keywords": [
+    "installer"
+  ],
+  "author": {
+    "name": "Tito Studio",
+    "email": "vankieen99@gmail.com",
+    "url": "https://github.com/kieennv99"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TitoniumGames/unity-template.git"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  }
+}

@@ -1,4 +1,4 @@
-﻿namespace GameTemplate.Editor.Validator
+﻿namespace Installer.Editor.Validator
 {
     public static class FrameworkLinks
     {
