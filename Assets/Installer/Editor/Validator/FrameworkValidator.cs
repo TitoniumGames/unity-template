@@ -149,8 +149,7 @@ namespace Installer.Editor.Validator
 
         private static bool HasDotween()
         {
-            return Type.GetType(
-                "DG.Tweening.DOTween, DOTween") != null;
+            return HasPackageAssembly("DOTween");
         }
 
         /// <summary>
@@ -173,7 +172,8 @@ namespace Installer.Editor.Validator
 
         private static bool HasDotweenAsmdef()
         {
-            return HasPackageAssembly("DOTween");
+            return AssetDatabase.FindAssets("DOTween t:AssemblyDefinitionAsset").Length > 0
+                   || AssetDatabase.FindAssets("DOTween.Modules t:AssemblyDefinitionAsset").Length > 0;
         }
 
         private static bool HasUnitaskDotweenSupport()
