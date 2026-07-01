@@ -1,11 +1,10 @@
-
 using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
-using Sirenix.OdinInspector;
 using UnityEngine;
 using UnityEngine.UI;
+
 namespace GameTemplate.Runtime.WGUI
 {
     [RequireComponent(typeof(CanvasGroup))]
@@ -13,7 +12,7 @@ namespace GameTemplate.Runtime.WGUI
     [DisallowMultipleComponent]
     public class UIBase : MonoBehaviour
     {
-        [Title("Panel Root")]
+        [Header("Panel Root")]
         [SerializeField] protected RectTransform _panelRoot;
         [SerializeField] protected Button _closeButton;
         private Canvas _canvas;

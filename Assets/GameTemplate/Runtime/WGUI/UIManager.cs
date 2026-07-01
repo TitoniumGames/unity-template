@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
+#if ODIN_INSPECTOR
 using Sirenix.OdinInspector;
+#endif
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 using UnityEngine.ResourceManagement.AsyncOperations;
@@ -11,7 +13,9 @@ namespace GameTemplate.Runtime.WGUI
 {
     public class UIManager : Singleton<UIManager>
     {
+#if ODIN_INSPECTOR
         [InlineEditor]
+#endif
         [SerializeField] private UIConfigSO uiConfig;
 
         private readonly Dictionary<Type, AsyncOperationHandle<GameObject>> _loaded = new();

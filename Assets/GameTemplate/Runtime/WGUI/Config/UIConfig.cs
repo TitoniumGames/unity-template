@@ -1,5 +1,7 @@
 using System;
+#if ODIN_INSPECTOR
 using Sirenix.OdinInspector;
+#endif
 using UnityEngine;
 using UnityEngine.AddressableAssets;
 
@@ -8,9 +10,13 @@ namespace GameTemplate.Runtime.WGUI
     [Serializable]
     public class UIConfig
     {
+        
+#if ODIN_INSPECTOR
         [Title("UI Config")]
         [Required]
-        [SerializeField] private AssetReference _assetReference;
+#endif
+        [SerializeField]
+        private AssetReference _assetReference;
         [SerializeField] private CanvasType _canvasType = CanvasType.FullScreen;
         [SerializeField] private UIAnimationType _showAnimationType = UIAnimationType.None;
         [SerializeField] private UIAnimationType _hideAnimationType = UIAnimationType.None;
