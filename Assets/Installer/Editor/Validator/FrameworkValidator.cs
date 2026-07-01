@@ -85,7 +85,24 @@ namespace Installer.Editor.Validator
 #endif
                 }
             },
+            new Item
+            {
+                Name = "Newtonsoft Json",
+                Description = "Newtonsoft Json package.",
+                Validator = HasNewtonsoftJson,
+                Install = () =>
+                {
+                    UnityEditor.PackageManager.Client.Add("com.unity.nuget.newtonsoft-json");
+                }
+            }
         };
+        
+        private static bool HasPackageAssembly(string assemblyName)
+        {
+            return AppDomain.CurrentDomain
+                .GetAssemblies()
+                .Any(x => x.GetName().Name == assemblyName);
+        }
 
         static FrameworkValidator()
         {
@@ -139,23 +156,24 @@ namespace Installer.Editor.Validator
         /// <summary>
         /// Check whether DOTween Assembly Definition has been generated.
         /// </summary>
-        private static bool HasDotweenAsmdef()
+        private static bool HasNewtonsoftJson()
         {
-            return AppDomain.CurrentDomain
-                .GetAssemblies()
-                .Any(x => x.GetName().Name == "DOTween");
-        }
-
-        private static bool HasAddressables()
-        {
-            return Type.GetType(
-                "UnityEngine.AddressableAssets.Addressables, Unity.Addressables") != null;
+            return HasPackageAssembly("Newtonsoft.Json");
         }
 
         private static bool HasUniTask()
         {
-            return Type.GetType(
-                "Cysharp.Threading.Tasks.UniTask, UniTask") != null;
+            return HasPackageAssembly("UniTask");
+        }
+
+        private static bool HasAddressables()
+        {
+            return HasPackageAssembly("Unity.Addressables");
+        }
+
+        private static bool HasDotweenAsmdef()
+        {
+            return HasPackageAssembly("DOTween");
         }
 
         private static bool HasUnitaskDotweenSupport()
