@@ -172,8 +172,17 @@ namespace Installer.Editor.Validator
 
         private static bool HasDotweenAsmdef()
         {
-            return AssetDatabase.FindAssets("DOTween t:AssemblyDefinitionAsset").Length > 0
-                   || AssetDatabase.FindAssets("DOTween.Modules t:AssemblyDefinitionAsset").Length > 0;
+            string[] guids = AssetDatabase.FindAssets("t:AssemblyDefinitionAsset");
+
+            foreach (string guid in guids)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+
+                if (path.EndsWith("DOTween.Modules.asmdef"))
+                    return true;
+            }
+
+            return false;
         }
 
         private static bool HasUnitaskDotweenSupport()
