@@ -85,9 +85,15 @@ Thumbs.db
 Packages/manifest.json
 Packages/packages-lock.json
 
+# External Packages
+Assets/Plugins/Sirenix/
+Assets/Plugins/Demigiant/
+
 # Keep package manifest but ignore lock file
 !Packages/manifest.json 
 Assets/AddressableAssetsData
 ProjectSettings/*.asset
 Assets/TextMesh Pro
 GIT_SETUP.md
+Assets/Resources/DOTweenSettings.asset
+Assets/Resources/DOTweenSettings.asset.meta
