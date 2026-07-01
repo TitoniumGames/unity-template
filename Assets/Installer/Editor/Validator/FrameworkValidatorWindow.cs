@@ -174,6 +174,13 @@ namespace Installer.Editor.Validator
             GUILayout.EndHorizontal();
 
             GUILayout.Space(10);
+            
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("Install Unity Template", GUILayout.Height(34)))
+            {
+                UnityEditor.PackageManager.Client.Add("https://github.com/TitoniumGames/unity-template.git?path=/Assets/GameTemplate");
+            }
+            GUILayout.EndHorizontal();
         }
 
         #endregion
