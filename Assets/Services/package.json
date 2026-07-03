@@ -1,0 +1,25 @@
+{
+  "name": "com.tito.unity-services",
+  "version": "1.0.3",
+  "displayName": "Tito Services",
+  "description": "A collection of services for Unity projects, providing essential functionalities and tools to enhance game development.",
+  "unity": "2022.3",
+  "keywords": [
+    "services"
+  ],
+  "dependencies": {
+    "com.unity.purchasing": "5.4.0"
+  },
+  "author": {
+    "name": "Tito Studio",
+    "email": "vankieen99@gmail.com",
+    "url": "https://github.com/kieennv99"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TitoniumGames/unity-template.git"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  }
+}

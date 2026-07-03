@@ -251,10 +251,10 @@ namespace GameTemplate.Runtime.WGUI
             rect.anchoredPosition = _originalAnchoredPos;
             Sequence seq = DOTween.Sequence();
 
-            seq.Join(_canvasGroup.DOFade(1f, _animationDuration));
+            await seq.Join(_canvasGroup.DOFade(1f, _animationDuration));
 
             if (_panelRoot != null)
-                seq.Join(_panelRoot.DOScale(1f, _animationDuration));
+                await seq.Join(_panelRoot.DOScale(1f, _animationDuration));
 
             await seq.ToUniTask(cancellationToken: token, tweenCancelBehaviour: TweenCancelBehaviour.Kill);
         }
@@ -264,10 +264,10 @@ namespace GameTemplate.Runtime.WGUI
             Sequence seq = DOTween.Sequence();
             RectTransform rect = GetPanelRect();
             rect.anchoredPosition = _originalAnchoredPos;
-            seq.Join(_canvasGroup.DOFade(0f, _animationDuration));
+            await seq.Join(_canvasGroup.DOFade(0f, _animationDuration));
 
             if (_panelRoot != null)
-                seq.Join(_panelRoot.DOScale(0.9f, _animationDuration));
+                await seq.Join(_panelRoot.DOScale(0.9f, _animationDuration));
 
             await seq.ToUniTask(cancellationToken: token, tweenCancelBehaviour: TweenCancelBehaviour.Kill);
         }

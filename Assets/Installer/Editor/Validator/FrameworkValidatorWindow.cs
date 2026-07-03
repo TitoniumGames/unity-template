@@ -6,6 +6,7 @@ namespace Installer.Editor.Validator
     public class FrameworkValidatorWindow : EditorWindow
     {
         private Vector2 _scroll;
+        private int _selectedTab = 0; // 0 = Framework, 1 = Services
 
         public static void ShowWindow()
         {
@@ -21,6 +22,9 @@ namespace Installer.Editor.Validator
         {
             DrawHeader();
 
+            GUILayout.Space(8);
+            DrawTabs();
+
             GUILayout.Space(15);
 
             DrawProgress();
@@ -29,11 +33,18 @@ namespace Installer.Editor.Validator
 
             _scroll = EditorGUILayout.BeginScrollView(_scroll);
 
-            foreach (var item in FrameworkValidator.Items)
+            if (_selectedTab == 0)
             {
-                DrawDependency(item);
+                foreach (var item in FrameworkValidator.Items)
+                {
+                    DrawDependency(item);
 
-                GUILayout.Space(8);
+                    GUILayout.Space(8);
+                }
+            }
+            else
+            {
+                DrawService();
             }
 
             EditorGUILayout.EndScrollView();
@@ -54,6 +65,91 @@ namespace Installer.Editor.Validator
             GUILayout.Label(
                 "Validate all required dependencies before starting development.",
                 EditorStyles.wordWrappedMiniLabel);
+        }
+
+        #endregion
+
+        #region Tabs
+
+        private void DrawTabs()
+        {
+            GUILayout.BeginHorizontal();
+
+            string[] tabs = { "Framework", "Services" };
+            _selectedTab = GUILayout.Toolbar(_selectedTab, tabs, GUILayout.Height(26));
+
+            GUILayout.EndHorizontal();
+        }
+
+        #endregion
+
+        #region Services
+
+        private void DrawService()
+        {
+            bool installed = UnityEditor.AssetDatabase.IsValidFolder("Assets/Services");
+
+            Color accent = installed
+                ? new Color(0.20f, 0.80f, 0.30f)
+                : new Color(0.90f, 0.25f, 0.25f);
+
+            EditorGUILayout.BeginHorizontal();
+
+            // Left Accent
+            Rect accentRect = GUILayoutUtility.GetRect(4, 70, GUILayout.Width(4));
+            EditorGUI.DrawRect(accentRect, accent);
+
+            GUILayout.Space(4);
+
+            EditorGUILayout.BeginVertical("HelpBox", GUILayout.Height(70));
+
+            GUILayout.BeginHorizontal();
+
+            GUILayout.Label(
+                installed ? "✔" : "✖",
+                new GUIStyle(EditorStyles.boldLabel)
+                {
+                    fontSize = 18,
+                    alignment = TextAnchor.MiddleCenter
+                },
+                GUILayout.Width(30));
+
+            GUILayout.BeginVertical();
+
+            GUILayout.Label(
+                "Tito Services",
+                new GUIStyle(EditorStyles.boldLabel)
+                {
+                    fontSize = 12
+                });
+
+            GUILayout.Space(2);
+
+            GUILayout.Label(
+                "Install the Tito Services package into Assets/Services.",
+                EditorStyles.wordWrappedMiniLabel);
+
+            GUILayout.EndVertical();
+
+            GUILayout.FlexibleSpace();
+
+            GUI.enabled = !installed;
+
+            if (GUILayout.Button(
+                    installed ? "Installed" : "Install",
+                    GUILayout.Width(140),
+                    GUILayout.Height(30)))
+            {
+                UnityEditor.PackageManager.Client.Add("https://github.com/TitoniumGames/unity-template.git?path=/Assets/Services");
+            }
+
+            GUI.enabled = true;
+
+            GUILayout.EndHorizontal();
+
+            GUILayout.EndVertical();
+
+            EditorGUILayout.EndHorizontal();
         }
 
         #endregion
@@ -176,9 +272,19 @@ namespace Installer.Editor.Validator
             GUILayout.Space(10);
             
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Install Unity Template", GUILayout.Height(34)))
+            if (_selectedTab == 0)
             {
-                UnityEditor.PackageManager.Client.Add("https://github.com/TitoniumGames/unity-template.git?path=/Assets/GameTemplate");
+                if (GUILayout.Button("Install Unity Template", GUILayout.Height(34)))
+                {
+                    UnityEditor.PackageManager.Client.Add("https://github.com/TitoniumGames/unity-template.git?path=/Assets/GameTemplate");
+                }
+            }
+            else
+            {
+                if (GUILayout.Button("Install Tito Services", GUILayout.Height(34)))
+                {
+                    UnityEditor.PackageManager.Client.Add("https://github.com/TitoniumGames/unity-template.git?path=/Assets/Services");
+                }
             }
             GUILayout.EndHorizontal();
         }
