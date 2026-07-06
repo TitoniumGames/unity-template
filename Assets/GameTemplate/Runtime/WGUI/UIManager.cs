@@ -17,7 +17,7 @@ namespace GameTemplate.Runtime.WGUI
         [InlineEditor]
 #endif
         [SerializeField] private UIConfigSO uiConfig;
-
+        [SerializeField] private Transform _parent;
         private readonly Dictionary<Type, AsyncOperationHandle<GameObject>> _loaded = new();
         [SerializeField] private readonly Dictionary<Type, UIBase> _spawned = new();
         private readonly Dictionary<Type, UniTask<UIBase>> _spawning = new();
@@ -199,7 +199,8 @@ namespace GameTemplate.Runtime.WGUI
                 _loaded.TryAdd(typeof(T), handle);
             }
 
-            UIBase instance = Instantiate(cachedPrefab, transform);
+            if (_parent == null) _parent = transform;
+            UIBase instance = Instantiate(cachedPrefab, _parent);
             return instance as T;
         }
 

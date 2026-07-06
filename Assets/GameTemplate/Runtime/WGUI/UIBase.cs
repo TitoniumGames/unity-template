@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using DG.Tweening;
+using Sirenix.OdinInspector;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -12,9 +13,9 @@ namespace GameTemplate.Runtime.WGUI
     [DisallowMultipleComponent]
     public class UIBase : MonoBehaviour
     {
-        [Header("Panel Root")]
+        [Title("Panel Root")]
         [SerializeField] protected RectTransform _panelRoot;
-        [SerializeField] protected Button _closeButton;
+        [SerializeField] protected Button[] _closeButtons;
         private Canvas _canvas;
         private CanvasGroup _canvasGroup;
         private Vector2 _originalAnchoredPos;
@@ -42,21 +43,29 @@ namespace GameTemplate.Runtime.WGUI
         }
         protected virtual void Start()
         {
-            if (_closeButton != null)
+            foreach (var closeButton in _closeButtons)
             {
-                _closeButton.onClick.AddListener(() =>
+                if (closeButton != null)
                 {
-                    UIManager.Instance.Hide(this);
-                });
+                    closeButton.onClick.AddListener(() =>
+                    {
+                        UIManager.Instance.Hide(this);
+                    });
+                }
             }
+
 
         }
         protected virtual void OnDestroy()
         {
-            if (_closeButton != null)
+            foreach (var closeButton in _closeButtons)
             {
-                _closeButton.onClick.RemoveAllListeners();
+                if (closeButton != null)
+                {
+                    closeButton.onClick.RemoveAllListeners();
+                }
             }
+
             _cts?.Cancel();
             _cts?.Dispose();
         }
@@ -78,6 +87,7 @@ namespace GameTemplate.Runtime.WGUI
             _lastShowAnimationType = type;
             try
             {
+                InitData();
                 await PlayShowAsync(type, token);
 
                 SetState(UIState.Visible);
@@ -142,6 +152,10 @@ namespace GameTemplate.Runtime.WGUI
             SetState(UIState.Visible);
 
             OnShowComplete?.Invoke(this);
+        }
+        protected virtual void InitData()
+        {
+
         }
         #endregion
 
@@ -251,10 +265,10 @@ namespace GameTemplate.Runtime.WGUI
             rect.anchoredPosition = _originalAnchoredPos;
             Sequence seq = DOTween.Sequence();
 
-            await seq.Join(_canvasGroup.DOFade(1f, _animationDuration));
+            seq.Join(_canvasGroup.DOFade(1f, _animationDuration));
 
             if (_panelRoot != null)
-                await seq.Join(_panelRoot.DOScale(1f, _animationDuration));
+                seq.Join(_panelRoot.DOScale(1f, _animationDuration));
 
             await seq.ToUniTask(cancellationToken: token, tweenCancelBehaviour: TweenCancelBehaviour.Kill);
         }
@@ -264,10 +278,10 @@ namespace GameTemplate.Runtime.WGUI
             Sequence seq = DOTween.Sequence();
             RectTransform rect = GetPanelRect();
             rect.anchoredPosition = _originalAnchoredPos;
-            await seq.Join(_canvasGroup.DOFade(0f, _animationDuration));
+            seq.Join(_canvasGroup.DOFade(0f, _animationDuration));
 
             if (_panelRoot != null)
-                await seq.Join(_panelRoot.DOScale(0.9f, _animationDuration));
+                seq.Join(_panelRoot.DOScale(0.9f, _animationDuration));
 
             await seq.ToUniTask(cancellationToken: token, tweenCancelBehaviour: TweenCancelBehaviour.Kill);
         }
