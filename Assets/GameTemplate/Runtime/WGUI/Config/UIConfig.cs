@@ -24,7 +24,7 @@ namespace GameTemplate.Runtime.WGUI
         [SerializeField] private int _sortingOrder = -1;
 
         [SerializeField] private float _animationDuration = 0.2f;
-        private string _typeName;
+        [SerializeField] private string _typeName;
 
         public AssetReference AssetReference => _assetReference;
         public CanvasType CanvasType => _canvasType;
