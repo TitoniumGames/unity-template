@@ -1,6 +1,7 @@
 using System.IO;
 using UnityEditor;
 using UnityEngine;
+using WData;
 
 namespace GameTemplate.Editor
 {
@@ -100,6 +101,37 @@ namespace GameTemplate.Editor
                 "Game Template v1.0.0\n\nA comprehensive Unity game development template with core systems and event management.\n", 
                 "OK"
             );
+        }
+
+        private const string DELETE_ALL_DATA_MENU = "WCore/Delete All";
+        [MenuItem(DELETE_ALL_DATA_MENU)]
+        public static void DeleteAllData()
+        {
+            bool confirmed = EditorUtility.DisplayDialog(
+                "Delete All Save Data",
+                "Are you sure you want to delete ALL save data?\n\nThis action cannot be undone.",
+                "Delete",
+                "Cancel");
+
+            if (!confirmed)
+                return;
+
+            try
+            {
+                DataFileHandler.DeleteAllInDevice();
+
+                Debug.Log("Game Template: All save data deleted successfully!");
+                
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"Game Template: Failed to delete save data: {e}");
+
+                EditorUtility.DisplayDialog(
+                    "Delete All Save Data",
+                    $"Failed to delete save data:\n{e.Message}",
+                    "OK");
+            }
         }
     }
 } 
