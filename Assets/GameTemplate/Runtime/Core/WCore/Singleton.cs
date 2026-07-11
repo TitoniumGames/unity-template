@@ -2,18 +2,36 @@ using UnityEngine;
 
 namespace WCore
 {
-
-
-
     public abstract class Singleton<T> : MonoBehaviour where T : MonoBehaviour
     {
         [SerializeField] protected bool canDontDestroyOnLoad = true;
         private static T instance;
+        private static readonly object locker = new object();
         public static T Instance
         {
             get
             {
-                return instance;
+                
+
+                lock (locker)
+                {
+                    if (instance == null)
+                    {
+#if UNITY_2023_1_OR_NEWER
+                        instance = FindFirstObjectByType<T>();
+#else
+                        instance = FindObjectOfType<T>();
+#endif
+
+                        if (instance == null)
+                        {
+                            GameObject go = new GameObject(typeof(T).Name);
+                            instance = go.AddComponent<T>();
+                        }
+                    }
+
+                    return instance;
+                }
             }
         }
 
