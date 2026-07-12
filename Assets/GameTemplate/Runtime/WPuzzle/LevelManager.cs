@@ -25,6 +25,7 @@ namespace WPuzzle
         private bool _isLevelLoading;
         public int MaxLevel => _levelConfigSOs.Levels.Count;
 
+        public event Action OnLevelLoaded;
         #region LifeCycle Methods
 
         protected override void Awake()
@@ -79,6 +80,9 @@ namespace WPuzzle
 
                 //Save to Database
                 LevelDataBlock.SetCurrentLevelNumber(levelConfig.LevelNumber);
+                
+                //Invoke Event
+                OnLevelLoaded?.Invoke();
             }
             catch (Exception e)
             {
