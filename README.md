@@ -18,6 +18,10 @@ Click **+ → Add package from Git URL**
 https://github.com/TitoniumGames/unity-template.git?path=/Assets/Installer
 ```
 
+```
+git@github.com:TitoniumGames/unity-template.git?path=/Assets/Installer
+```
+
 Click **Add**.
 
 ---
@@ -68,6 +72,10 @@ or install manually via Git URL:
 
 ```
 https://github.com/TitoniumGames/unity-template.git?path=/Assets/GameTemplate
+```
+
+```
+git@github.com:TitoniumGames/unity-template.git?path=/Assets/GameTemplate
 ```
 
 ---
