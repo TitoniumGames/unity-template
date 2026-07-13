@@ -1,4 +1,6 @@
-﻿using UnityEditor;
+﻿using System;
+using System.Linq;
+using UnityEditor;
 using UnityEngine;
 
 namespace Installer.Editor.Validator
@@ -17,6 +19,42 @@ namespace Installer.Editor.Validator
 
             window.Show();
         }
+        
+        private void DrawFrameworkProgress()
+        {
+            int installed = FrameworkValidator.InstalledCount();
+            int total = FrameworkValidator.TotalCount();
+
+            float progress = total == 0 ? 0 : (float)installed / total;
+
+            Rect rect = GUILayoutUtility.GetRect(1, 22);
+
+            EditorGUI.ProgressBar(
+                rect,
+                progress,
+                $"Framework Ready ({installed}/{total})");
+        }
+        
+        private void DrawServiceProgress()
+        {
+            int installed = 0;
+            int total = 2;
+
+            if (HasTitoServices())
+                installed++;
+
+            if (HasUnityIAP())
+                installed++;
+
+            float progress = (float)installed / total;
+
+            Rect rect = GUILayoutUtility.GetRect(1, 22);
+
+            EditorGUI.ProgressBar(
+                rect,
+                progress,
+                $"Services Ready ({installed}/{total})");
+        }
 
         private void OnGUI()
         {
@@ -27,7 +65,10 @@ namespace Installer.Editor.Validator
 
             GUILayout.Space(15);
 
-            DrawProgress();
+            if (_selectedTab == 0)
+                DrawFrameworkProgress();
+            else
+                DrawServiceProgress();
 
             GUILayout.Space(15);
 
@@ -38,7 +79,6 @@ namespace Installer.Editor.Validator
                 foreach (var item in FrameworkValidator.Items)
                 {
                     DrawDependency(item);
-
                     GUILayout.Space(8);
                 }
             }
@@ -52,6 +92,13 @@ namespace Installer.Editor.Validator
             GUILayout.FlexibleSpace();
 
             DrawFooter();
+        }
+        
+        private static bool HasUnityIAP()
+        {
+            return AppDomain.CurrentDomain
+                .GetAssemblies()
+                .Any(a => a.GetName().Name == "Unity.Purchasing");
         }
 
         #region Header
@@ -84,11 +131,29 @@ namespace Installer.Editor.Validator
         #endregion
 
         #region Services
-
-        private void DrawService()
+        
+        private static bool HasTitoServices()
         {
-            bool installed = UnityEditor.AssetDatabase.IsValidFolder("Assets/Services");
-
+            return AppDomain.CurrentDomain
+                .GetAssemblies()
+                .Any(a => a.GetName().Name == "Tito.Services");
+        }
+        
+        [MenuItem("Tools/Debug/Print Assemblies")]
+        private static void PrintAssemblies()
+        {
+            foreach (var asm in AppDomain.CurrentDomain.GetAssemblies().OrderBy(a => a.GetName().Name))
+            {
+                Debug.Log(asm.GetName().Name);
+            }
+        }
+        
+        private void DrawServiceDependency(
+            string title,
+            string description,
+            bool installed,
+            Action install)
+        {
             Color accent = installed
                 ? new Color(0.20f, 0.80f, 0.30f)
                 : new Color(0.90f, 0.25f, 0.25f);
@@ -117,7 +182,7 @@ namespace Installer.Editor.Validator
             GUILayout.BeginVertical();
 
             GUILayout.Label(
-                "Tito Services",
+                title,
                 new GUIStyle(EditorStyles.boldLabel)
                 {
                     fontSize = 12
@@ -126,7 +191,7 @@ namespace Installer.Editor.Validator
             GUILayout.Space(2);
 
             GUILayout.Label(
-                "Install the Tito Services package into Assets/Services.",
+                description,
                 EditorStyles.wordWrappedMiniLabel);
 
             GUILayout.EndVertical();
@@ -137,10 +202,10 @@ namespace Installer.Editor.Validator
 
             if (GUILayout.Button(
                     installed ? "Installed" : "Install",
-                    GUILayout.Width(140),
+                    GUILayout.Width(120),
                     GUILayout.Height(30)))
             {
-                UnityEditor.PackageManager.Client.Add("https://github.com/TitoniumGames/unity-template.git?path=/Assets/Services");
+                install?.Invoke();
             }
 
             GUI.enabled = true;
@@ -150,6 +215,31 @@ namespace Installer.Editor.Validator
             GUILayout.EndVertical();
 
             EditorGUILayout.EndHorizontal();
+        }
+
+        private void DrawService()
+        {
+            DrawServiceDependency(
+                "Unity In-App Purchasing",
+                "Install the Unity Purchasing package.",
+                HasUnityIAP(),
+                () =>
+                {
+                    UnityEditor.PackageManager.Client.Add(
+                        "com.unity.purchasing");
+                });
+            
+            GUILayout.Space(8);
+            
+            DrawServiceDependency(
+                "Tito Services",
+                "Install the Tito Services package.",
+                HasTitoServices(),
+                () =>
+                {
+                    UnityEditor.PackageManager.Client.Add(
+                        "https://github.com/TitoniumGames/unity-template.git?path=/Assets/Services");
+                });
         }
 
         #endregion
