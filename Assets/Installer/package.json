@@ -1,6 +1,6 @@
 {
   "name": "com.tito.unity-installer",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "displayName": "Tito Installer",
   "description": "A comprehensive game development template with core systems and event management",
   "unity": "2022.3",
