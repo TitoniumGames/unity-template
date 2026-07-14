@@ -12,7 +12,7 @@ namespace GameTemplate.Editor
         float _timeScale = 1f;
         string _levelInput = "1";
 
-        [MenuItem("Tools/FPS Control")]
+        [MenuItem("Tools/Game Template/FPS Control")]
         static void OpenWindow()
         {
             var window = GetWindow<EditorFPSControl>("FPS Control");

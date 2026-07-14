@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
@@ -67,7 +68,7 @@ namespace Installer.Editor.Validator
                 Install = () =>
                 {
 #if UNITY_2021_3_OR_NEWER
-                    UnityEditor.PackageManager.Client.Add("com.unity.addressables");
+                    PackageInstaller.Install("com.unity.addressables");
 #endif
                 }
             },
@@ -80,10 +81,30 @@ namespace Installer.Editor.Validator
                 Install = () =>
                 {
 #if UNITY_2021_3_OR_NEWER
-                    UnityEditor.PackageManager.Client.Add(
+                    PackageInstaller.Install(
                         "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask");
 #endif
                 }
+            },
+            new Item
+            {
+                Name = "NuGetForUnity",
+                Description = "Required to install NuGet packages such as MemoryPack.",
+                Validator = HasNuGetForUnity,
+                Install = () =>
+                {
+#if UNITY_2021_3_OR_NEWER
+                    PackageInstaller.Install(
+                        "https://github.com/GlitchEnzo/NuGetForUnity.git?path=/src/NuGetForUnity");
+#endif
+                }
+            },
+            new Item
+            {
+                Name = "MemoryPack",
+                Description = "High-performance serialization library.",
+                Validator = HasMemoryPack,
+                Install = () => {}
             },
             new Item
             {
@@ -92,7 +113,7 @@ namespace Installer.Editor.Validator
                 Validator = HasNewtonsoftJson,
                 Install = () =>
                 {
-                    UnityEditor.PackageManager.Client.Add("com.unity.nuget.newtonsoft-json");
+                    PackageInstaller.Install("com.unity.nuget.newtonsoft-json");
                 }
             }
         };
@@ -158,6 +179,22 @@ namespace Installer.Editor.Validator
         private static bool HasNewtonsoftJson()
         {
             return HasPackageAssembly("Newtonsoft.Json");
+        }
+        
+        private static bool HasNuGetForUnity()
+        {
+            return HasPackageAssembly("NuGetForUnity");
+        }
+        
+        private static bool HasMemoryPack()
+        {
+            const string root = "Assets/Packages";
+
+            if (!Directory.Exists(root))
+                return false;
+
+            return Directory.GetDirectories(root)
+                .Any(dir => Path.GetFileName(dir).StartsWith("MemoryPack."));
         }
 
         private static bool HasUniTask()
@@ -269,12 +306,6 @@ namespace Installer.Editor.Validator
 
         [MenuItem("Tools/Game Template/Framework Validator", priority = 0)]
         public static void OpenWindow()
-        {
-            FrameworkValidatorWindow.ShowWindow();
-        }
-
-        [MenuItem("Tools/Game Template/Recheck Framework", priority = 1)]
-        public static void Recheck()
         {
             FrameworkValidatorWindow.ShowWindow();
         }

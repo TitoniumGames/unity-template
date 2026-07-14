@@ -34,6 +34,92 @@ namespace Installer.Editor.Validator
                 progress,
                 $"Framework Ready ({installed}/{total})");
         }
+
+        #region Other Tools
+
+        private static bool HasGraphy()
+        {
+            return AppDomain.CurrentDomain
+                .GetAssemblies()
+                .Any(a => a.GetName().Name == "Tayx.Graphy");
+        }
+
+        private static bool HasDebugSheet()
+        {
+            return AppDomain.CurrentDomain
+                .GetAssemblies()
+                .Any(a => a.GetName().Name == "UnityDebugSheet");
+        }
+
+        private static bool HasIngameDebugConsole()
+        {
+            return AppDomain.CurrentDomain
+                .GetAssemblies()
+                .Any(a => a.GetName().Name == "IngameDebugConsole.Runtime");
+        }
+
+        private void DrawOtherTools()
+        {
+            DrawServiceDependency(
+                "Graphy",
+                "Real-time FPS, Memory and Rendering profiler.",
+                HasGraphy(),
+                () =>
+                {
+                    PackageInstaller.Install(
+                        "https://github.com/Tayx94/graphy.git");
+                });
+
+            GUILayout.Space(8);
+
+            DrawServiceDependency(
+                "Unity Debug Sheet",
+                "Runtime debug menu for developers.",
+                HasDebugSheet(),
+                () =>
+                {
+                    PackageInstaller.Install(
+                        "https://github.com/Haruma-K/UnityDebugSheet.git?path=/Assets/UnityDebugSheet");
+                });
+
+            GUILayout.Space(8);
+
+            DrawServiceDependency(
+                "Ingame Debug Console",
+                "Runtime console and command system.",
+                HasIngameDebugConsole(),
+                () =>
+                {
+                    PackageInstaller.Install(
+                        "https://github.com/yasirkula/UnityIngameDebugConsole.git");
+                });
+        }
+
+        private void DrawOtherToolsProgress()
+        {
+            int installed = 0;
+            int total = 3;
+
+            if (HasGraphy())
+                installed++;
+
+            if (HasDebugSheet())
+                installed++;
+
+            if (HasIngameDebugConsole())
+                installed++;
+
+            float progress = (float)installed / total;
+
+            Rect rect = GUILayoutUtility.GetRect(1, 22);
+
+            EditorGUI.ProgressBar(
+                rect,
+                progress,
+                $"Other Tools Ready ({installed}/{total})");
+        }
+
+        #endregion
         
         private void DrawServiceProgress()
         {
@@ -65,26 +151,48 @@ namespace Installer.Editor.Validator
 
             GUILayout.Space(15);
 
-            if (_selectedTab == 0)
-                DrawFrameworkProgress();
-            else
-                DrawServiceProgress();
+            switch (_selectedTab)
+            {
+                case 0:
+                    DrawFrameworkProgress();
+                    break;
+
+                case 1:
+                    DrawServiceProgress();
+                    break;
+
+                case 2:
+                    DrawOtherToolsProgress();
+                    break;
+            }
 
             GUILayout.Space(15);
 
             _scroll = EditorGUILayout.BeginScrollView(_scroll);
 
-            if (_selectedTab == 0)
+            switch (_selectedTab)
             {
-                foreach (var item in FrameworkValidator.Items)
-                {
-                    DrawDependency(item);
-                    GUILayout.Space(8);
-                }
-            }
-            else
-            {
-                DrawService();
+                case 0:
+
+                    foreach (var item in FrameworkValidator.Items)
+                    {
+                        DrawDependency(item);
+                        GUILayout.Space(8);
+                    }
+
+                    break;
+
+                case 1:
+
+                    DrawService();
+
+                    break;
+
+                case 2:
+
+                    DrawOtherTools();
+
+                    break;
             }
 
             EditorGUILayout.EndScrollView();
@@ -122,7 +230,13 @@ namespace Installer.Editor.Validator
         {
             GUILayout.BeginHorizontal();
 
-            string[] tabs = { "Framework", "Services" };
+            string[] tabs =
+            {
+                "Framework",
+                "Services",
+                "Other Tools"
+            };
+
             _selectedTab = GUILayout.Toolbar(_selectedTab, tabs, GUILayout.Height(26));
 
             GUILayout.EndHorizontal();
@@ -225,8 +339,7 @@ namespace Installer.Editor.Validator
                 HasUnityIAP(),
                 () =>
                 {
-                    UnityEditor.PackageManager.Client.Add(
-                        "com.unity.purchasing");
+                    PackageInstaller.Install("com.unity.purchasing");
                 });
             
             GUILayout.Space(8);
@@ -237,8 +350,7 @@ namespace Installer.Editor.Validator
                 HasTitoServices(),
                 () =>
                 {
-                    UnityEditor.PackageManager.Client.Add(
-                        "https://github.com/TitoniumGames/unity-template.git?path=/Assets/Services");
+                    PackageInstaller.Install("https://github.com/TitoniumGames/unity-template.git?path=/Assets/Services");
                 });
         }
 
@@ -313,7 +425,7 @@ namespace Installer.Editor.Validator
 
             GUILayout.FlexibleSpace();
 
-            GUI.enabled = !installed;
+            GUI.enabled = !PackageInstaller.IsInstalling;
 
             if (GUILayout.Button(
                     installed ? "Installed" : "Install",
@@ -369,7 +481,7 @@ namespace Installer.Editor.Validator
                     UnityEditor.PackageManager.Client.Add("https://github.com/TitoniumGames/unity-template.git?path=/Assets/GameTemplate");
                 }
             }
-            else
+            else if(_selectedTab == 1)
             {
                 if (GUILayout.Button("Install Tito Services", GUILayout.Height(34)))
                 {
