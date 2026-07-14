@@ -74,25 +74,6 @@ namespace GameTemplate.Editor
             }
         }
 
-        [MenuItem(MENU_PATH + "Documentation/EventSystem README")]
-        public static void OpenEventSystemReadme()
-        {
-            string readmePath = "Assets/GameTemplate/EventSystem/README.md";
-            if (File.Exists(readmePath))
-            {
-                Object readme = AssetDatabase.LoadAssetAtPath<Object>(readmePath);
-                if (readme != null)
-                {
-                    Selection.activeObject = readme;
-                    EditorGUIUtility.PingObject(readme);
-                }
-            }
-            else
-            {
-                EditorUtility.DisplayDialog("Game Template", "EventSystem README not found!", "OK");
-            }
-        }
-
         [MenuItem(MENU_PATH + "About Game Template")]
         public static void ShowAboutDialog()
         {

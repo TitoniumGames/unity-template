@@ -4,22 +4,34 @@ using WData;
 namespace WPuzzle
 {
     [MemoryPackable]
-    public partial class LevelDataBlock : DataBlock<LevelDataBlock>
+    public partial class LevelData
     {
-        [MemoryPackInclude] private int _currentLevelNumber;
-        public static int CurrentLevelNumber => Instance._currentLevelNumber;
-        
+        public int CurrentLevelNumber = 1;
+    }
+
+    public sealed class LevelDataBlock
+        : DataBlock<LevelDataBlock, LevelData>
+    {
+        public int CurrentLevelNumber => Data.CurrentLevelNumber;
+
         protected override void Init()
         {
             base.Init();
-            if (_currentLevelNumber < 1)
+
+            if (Data.CurrentLevelNumber < 1)
             {
-                _currentLevelNumber = 1;
+                Data.CurrentLevelNumber = 1;
+                Save();
             }
         }
-        public static void SetCurrentLevelNumber(int levelNumber)
+
+        public void SetCurrentLevelNumber(int levelNumber)
         {
-            Instance._currentLevelNumber = levelNumber;
+            if (Data.CurrentLevelNumber == levelNumber)
+                return;
+
+            Data.CurrentLevelNumber = levelNumber;
+
             Save();
         }
     }

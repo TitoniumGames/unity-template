@@ -1,75 +1,60 @@
 ﻿using GameTemplate.Runtime.Core.WCore.EventBus;
-using Newtonsoft.Json;
-using UnityEngine;
-using WCore;
+using MemoryPack;
+using WData;
 
 namespace GameTemplate.Runtime.Core.Settings
 {
-    [System.Serializable]
-    public class GameSettings
+    [MemoryPackable]
+    public partial class GameSettings
     {
-        public bool Music = true;
-        public bool Sfx = true;
-        public bool Haptic = true;
+        public bool Music { get; set; } = true;
+        public bool Sfx { get; set; } = true;
+        public bool Haptic { get; set; } = true;
     }
-    public class SettingManager: Singleton<SettingManager>
+
+    public sealed class SettingManager
+        : DataBlock<SettingManager, GameSettings>
     {
-        [SerializeField] private GameSettings settings;
-        [SerializeField] private bool syncOnStart = true;
+        public bool Music => Data.Music;
+        public bool Sfx => Data.Sfx;
+        public bool Haptic => Data.Haptic;
 
-        private void Start()
+        public void SetMusic(bool value)
         {
-            if (syncOnStart)
-            {
-                SyncSettings();
-            }
-        }
-
-        public void SetMusic(bool music)
-        {
-            if (settings.Music == music)
-            {
+            if (Data.Music == value)
                 return;
-            }
-            
-            settings.Music = music;
-            SaveSettings();
+
+            Data.Music = value;
+            SaveAndNotify();
         }
 
-        public void SetSfx(bool sfx)
+        public void SetSfx(bool value)
         {
-            if (settings.Sfx == sfx)
-            {
+            if (Data.Sfx == value)
                 return;
-            }
-            
-            settings.Sfx = sfx;
-            SaveSettings();
+
+            Data.Sfx = value;
+            SaveAndNotify();
         }
 
-        public void SetHaptic(bool haptic)
+        public void SetHaptic(bool value)
         {
-            if (settings.Haptic == haptic)
-            {
+            if (Data.Haptic == value)
                 return;
-            }
-            settings.Haptic = haptic;
-            SaveSettings();
-        }   
 
-        private void SaveSettings()
-        {
-            PlayerPrefs.SetString("Settings", JsonConvert.SerializeObject(settings));
-            EventBus<SettingEvent>.Post(new SettingEvent(settings));
+            Data.Haptic = value;
+            SaveAndNotify();
         }
-        
-        public void SyncSettings()
+
+        private void SaveAndNotify()
         {
-            settings = JsonConvert.DeserializeObject<GameSettings>(PlayerPrefs.GetString("Settings")) ?? new GameSettings();
-            SetMusic(settings.Music);
-            SetSfx(settings.Sfx);
-            SetHaptic(settings.Haptic);
-            SaveSettings();
+            Save();
+            EventBus<SettingEvent>.Post(new SettingEvent(Data));
+        }
+
+        public void Sync()
+        {
+            EventBus<SettingEvent>.Post(new SettingEvent(Data));
         }
     }
 }

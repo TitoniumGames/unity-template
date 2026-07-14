@@ -50,7 +50,7 @@ namespace WPuzzle
 
         private async UniTask StartLevel()
         {
-            int currentLevel = LevelDataBlock.CurrentLevelNumber;
+            int currentLevel = LevelDataBlock.Instance.CurrentLevelNumber;
             LoadLevelByNumber(currentLevel);
         }
         private LevelConfig GetLevelByNumber(int levelNumber)
@@ -79,7 +79,7 @@ namespace WPuzzle
                 _currentLevel.Initialize(levelData, levelConfig.LevelNumber);
 
                 //Save to Database
-                LevelDataBlock.SetCurrentLevelNumber(levelConfig.LevelNumber);
+                LevelDataBlock.Instance.SetCurrentLevelNumber(levelConfig.LevelNumber);
                 
                 //Invoke Event
                 OnLevelLoaded?.Invoke();

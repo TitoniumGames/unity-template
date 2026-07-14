@@ -3,55 +3,80 @@ using WCore;
 
 namespace WData
 {
-    [Serializable]
-    public class DataBlock<T> where T : DataBlock<T>
+    public abstract class DataBlock<TManager, TData>
+        where TManager : DataBlock<TManager, TData>, new()
+        where TData : class, new()
     {
-        private static T _instance;
+        private static TManager _instance;
+        private bool _dirty;
 
-        public static T Instance
+        protected TData Data { get; private set; }
+
+        public static TManager Instance
         {
             get
             {
-                if (_instance == null)
+                if (_instance != null)
+                    return _instance;
+
+                _instance = new TManager();
+
+                _instance.Data = DataFileHandler.LoadFromDevice<TData>(_instance.FileName);
+
+                if (_instance.Data == null)
                 {
-                    _instance = DataFileHandler.LoadFromDevice<T>(typeof(T).ToString());
-
-                    if (_instance == null)
-                        _instance = (T)Activator.CreateInstance(typeof(T));
-
-                    _instance.Init();
+                    _instance.Data = new TData();
+                    _instance.Save();
                 }
+
+                _instance.Init();
 
                 return _instance;
             }
         }
 
+     
+        protected virtual string FileName => typeof(TData).Name;
+
         protected virtual void Init()
         {
-            AppLifeCycle.Instance.OnApplicationPauseEvent += AppLifeCycle_ApplicationOnPause;
-            AppLifeCycle.Instance.OnApplicationQuitEvent += AppLifeCycle_ApplicationOnQuit;
+            AppLifeCycle.Instance.OnApplicationPauseEvent += OnApplicationPause;
+            AppLifeCycle.Instance.OnApplicationQuitEvent += OnApplicationQuit;
         }
-        private void AppLifeCycle_ApplicationOnQuit()
+        
+        protected void MarkDirty()
+        {
+            _dirty = true;
+        }
+        
+        protected virtual void OnApplicationPause(bool pause)
+        {
+            if (pause)
+                Save();
+        }
+
+        protected virtual void OnApplicationQuit()
         {
             Save();
         }
 
-        private void AppLifeCycle_ApplicationOnPause(bool paused)
+        public void Save(bool force = false)
         {
-            if (paused)
-                Save();
+            if (!force && !_dirty)
+                return;
+
+            DataFileHandler.SaveToDevice(Data, FileName);
+
+            _dirty = false;
         }
 
-        public static void Save()
+        public void Delete()
         {
-            DataFileHandler.SaveToDevice(Instance, typeof(T).ToString());
-        }
+            DataFileHandler.DeleteInDevice(FileName);
 
-        public static void Delete()
-        {
-            _instance = null;
+            Data = new TData();
 
-            DataFileHandler.DeleteInDevice(typeof(T).ToString());
+            Save();
         }
     }
 }
