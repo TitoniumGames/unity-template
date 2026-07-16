@@ -30,11 +30,6 @@ namespace GameTemplate.Runtime.Core
             }
 
             Application.targetFrameRate = applicationSettings.TargetFPS;
-            
-            // Preload Save Data
-            _ = SettingManager.Instance;
-            _ = Player.Instance;
-            _ = LevelManager.Instance;
 
             // Sync systems
             SettingManager.Instance.Sync();
