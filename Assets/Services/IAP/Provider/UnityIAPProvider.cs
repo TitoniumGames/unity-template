@@ -112,6 +112,7 @@ namespace Tito.Services.IAP.Provider
         private void OnStoreConnected()
         {
             Debug.Log("UnityIAPProvider: Store connected");
+            m_IsPurchaseInProgress = false;
         }
         
         private void OnPurchaseConfirmed(Order order)
