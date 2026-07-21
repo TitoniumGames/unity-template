@@ -5,12 +5,12 @@ namespace GameTemplate.Runtime.GameData
     public struct PlayerCurrencyChangedEvent: IEvent
     {
         public CurrencyType CurrencyType { get; }
-        public int Coin { get; }
+        public double Value { get; }
         
-        public PlayerCurrencyChangedEvent(CurrencyType currencyType, int coin)
+        public PlayerCurrencyChangedEvent(CurrencyType currencyType, double value)
         {
             CurrencyType = currencyType;
-            Coin = coin;
+            Value = value;
         }
     }
 }

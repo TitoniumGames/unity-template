@@ -9,8 +9,8 @@ namespace GameTemplate.Runtime.GameData
     [MemoryPackable]
     public partial class CurrencyData
     {
-        public int Coin;
-        public int Gem;
+        public double Coin;
+        public double Gem;
     }
     
     public class CurrencyService: PlayerService<CurrencyData>
@@ -24,11 +24,11 @@ namespace GameTemplate.Runtime.GameData
             this.save = save;
         }
 
-        public int Coin => data.Coin;
+        public double Coin => data.Coin;
 
-        public int Gem => data.Gem;
+        public double Gem => data.Gem;
 
-        public void AddCoin(int amount)
+        public void AddCoin(double amount)
         {
             if (amount <= 0)
                 return;

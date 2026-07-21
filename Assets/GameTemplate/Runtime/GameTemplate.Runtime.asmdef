@@ -8,7 +8,8 @@
         "Unity.ResourceManager",
         "UniTask.DOTween",
         "DOTween.Modules",
-        "Unity.Purchasing"
+        "Unity.Purchasing",
+        "ParticleImage"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
