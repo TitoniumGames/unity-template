@@ -104,7 +104,6 @@ namespace GameTemplate.Runtime.WGUI
                 }
             }
 
-            Debug.Log(Mathf.Min(num, 30));
             currencySpawner.SetBurst(0, 0f, Mathf.Min(num, 35));
             currencySpawner.transform.position = position;
             currencySpawner.sprite = currencyConfig.Sprite;
