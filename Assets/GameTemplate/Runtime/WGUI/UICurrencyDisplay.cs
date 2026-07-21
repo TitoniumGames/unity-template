@@ -19,6 +19,8 @@ namespace GameTemplate.Runtime.WGUI
         [SerializeField] private ParticleImage currencySpawner;
         [SerializeField] private AudioSource collectSfx;
 
+        public double  coinPerParticle = 5;
+
         private double _remainingPaydown;
 
         public UnityEvent OnCurrencyUpdated;
@@ -84,9 +86,15 @@ namespace GameTemplate.Runtime.WGUI
             _remainingPaydown = 0f;
         }
         
-        public void BurstCurrency(double totalPayout, Vector3 position)
+        public void BurstCurrency(double totalPayout, Vector3 position, double _coinPerParticle = 1)
         {
-            int num = (int)Math.Min(Math.Ceiling(totalPayout), 25);
+            coinPerParticle = Math.Max(1, _coinPerParticle);
+
+            int particleCount = Mathf.Clamp(
+                (int)Math.Ceiling(totalPayout / coinPerParticle),
+                1,
+                35);
+
             _remainingPaydown += totalPayout;
 
             if (!gameObject.activeInHierarchy)
@@ -102,10 +110,12 @@ namespace GameTemplate.Runtime.WGUI
                 }
             }
 
-            currencySpawner.SetBurst(0, 0f, Mathf.Min(num, 35));
+            currencySpawner.SetBurst(0, 0f, particleCount);
             currencySpawner.transform.position = position;
             currencySpawner.sprite = currencyConfig.Sprite;
             currencySpawner.Play();
+
+            currencySpawner.onLastParticleFinished.RemoveListener(OnLastParticleFinished);
             currencySpawner.onLastParticleFinished.AddListener(OnLastParticleFinished);
         }
         
@@ -118,20 +128,17 @@ namespace GameTemplate.Runtime.WGUI
 
         private void PayDownOutstanding()
         {
-            double paydown;
+            if (_remainingPaydown <= 0)
+                return;
 
-            if (currencySpawner.particles.Count == 0)
-            {
-                paydown = _remainingPaydown;
-            }
-            else
-            {
-                paydown = _remainingPaydown / (float)currencySpawner.particles.Count;
-            }
+            double paydown = Math.Min(coinPerParticle, _remainingPaydown);
 
             _remainingPaydown -= paydown;
+
             Player.Instance.Currency.AddCoin(paydown);
-            if(collectSfx) collectSfx.Play();
+
+            if (collectSfx)
+                collectSfx.Play();
         }
         
         private void UpdateDisplayValue(CurrencyType type, double value)
