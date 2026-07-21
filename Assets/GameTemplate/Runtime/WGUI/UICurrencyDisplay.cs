@@ -9,7 +9,7 @@ using WCore;
 
 namespace GameTemplate.Runtime.WGUI
 {
-    public class UICurrencyDisplay: Singleton<UICurrencyDisplay>
+    public class UICurrencyDisplay: MonoBehaviour
     {
         [SerializeField] private string prependString;
         [SerializeField] private string postpendString;
