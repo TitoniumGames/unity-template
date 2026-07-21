@@ -13,6 +13,16 @@ namespace GameTemplate.Runtime.GameData
             this.data = data;
             this.save = save;
         }
+        
+        public void Register(string id, int defaultAmount)
+        {
+            if (data.Get(id) != null)
+                return;
+
+            data.Add(id, defaultAmount);
+
+            save();
+        }
 
         public int GetAmount(string id)
         {
