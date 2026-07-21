@@ -664,13 +664,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0a21668982cb412fa9d0101918502208, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  canDontDestroyOnLoad: 1
   prependString: 
   postpendString: 
   currencyConfig: {fileID: 11400000, guid: a24331e2540bbb14898d8fccb1acacd2, type: 2}
   currencyText: {fileID: 1356620624}
   currencySpawner: {fileID: 632924600}
   collectSfx: {fileID: 0}
+  maxParticles: 25
+  OnCurrencyUpdated:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!114 &1184427257
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -59,9 +59,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_RaycastTarget: 1
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 1
+  m_Maskable: 0
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
@@ -73,7 +73,7 @@ MonoBehaviour:
     enabled: 0
   _emitterConstraintTransform: {fileID: 0}
   _shape: 1
-  _spread: 0
+  _spread: 1
   _spreadLoop: 1
   _startDelay: 0
   _radius: 50
@@ -142,7 +142,7 @@ MonoBehaviour:
         m_PostInfinity: 2
         m_RotationOrder: 4
       m_ConstantMin: 0
-      m_ConstantMax: 83.2
+      m_ConstantMax: 64
     yCurve:
       m_Mode: 0
       m_CurveMultiplier: 0
@@ -159,7 +159,7 @@ MonoBehaviour:
         m_PostInfinity: 2
         m_RotationOrder: 4
       m_ConstantMin: 0
-      m_ConstantMax: 68
+      m_ConstantMax: 64
     zCurve:
       m_Mode: 0
       m_CurveMultiplier: 0
@@ -1296,13 +1296,13 @@ MonoBehaviour:
     to: 1
   _textureSheetFPS: 25
   _textureSheetCycles: 1
-  _rate: 50
+  _rate: 0
   _rateOverLifetime: 0
   _rateOverDistance: 0
   _bursts:
   - time: 0
-    count: 0
-    used: 1
+    count: 25
+    used: 0
   _particleTrailRenderer: {fileID: 0}
   _trailModule:
     enabled: 0

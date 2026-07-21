@@ -42,6 +42,21 @@ namespace GameTemplate.Runtime.GameData
                     CurrencyType.Coin,
                     data.Coin));
         }
+        
+        public void AddGem(double amount)
+        {
+            if (amount <= 0)
+                return;
+
+            data.Gem += amount;
+
+            save();
+
+            EventBus<PlayerCurrencyChangedEvent>.Post(
+                new PlayerCurrencyChangedEvent(
+                    CurrencyType.Gem,
+                    data.Gem));
+        }
 
         public bool SpendCoin(int amount)
         {
@@ -62,10 +77,35 @@ namespace GameTemplate.Runtime.GameData
 
             return true;
         }
+        
+        public bool SpendGem(int amount)
+        {
+            if (amount <= 0)
+                return false;
+
+            if (data.Gem < amount)
+                return false;
+
+            data.Gem -= amount;
+
+            save();
+
+            EventBus<PlayerCurrencyChangedEvent>.Post(
+                new PlayerCurrencyChangedEvent(
+                    CurrencyType.Gem,
+                    data.Gem));
+
+            return true;
+        }
 
         public bool HasEnoughCoin(int amount)
         {
             return data.Coin >= amount;
+        }
+        
+        public bool HasEnoughGem(int amount)
+        {
+            return data.Gem >= amount;
         }
     }
 }

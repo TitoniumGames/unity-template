@@ -18,6 +18,8 @@ namespace GameTemplate.Runtime.WGUI
         [SerializeField] private TextMeshProUGUI currencyText;
         [SerializeField] private ParticleImage currencySpawner;
         [SerializeField] private AudioSource collectSfx;
+        [SerializeField, Min(1)]
+        private int maxParticles = 25;
 
         private double _remainingPaydown;
 
@@ -86,7 +88,7 @@ namespace GameTemplate.Runtime.WGUI
         
         public void BurstCurrency(double totalPayout, Vector3 position)
         {
-            int num = (int)Math.Min(Math.Ceiling(totalPayout), 25);
+            int num = (int)Math.Min(Math.Ceiling(totalPayout), maxParticles);
             _remainingPaydown += totalPayout;
 
             if (!gameObject.activeInHierarchy)
@@ -102,6 +104,7 @@ namespace GameTemplate.Runtime.WGUI
                 }
             }
 
+            Debug.Log(Mathf.Min(num, 30));
             currencySpawner.SetBurst(0, 0f, Mathf.Min(num, 35));
             currencySpawner.transform.position = position;
             currencySpawner.sprite = currencyConfig.Sprite;
@@ -130,7 +133,16 @@ namespace GameTemplate.Runtime.WGUI
             }
 
             _remainingPaydown -= paydown;
-            Player.Instance.Currency.AddCoin(paydown);
+            switch (currencyConfig.CurrencyType)
+            {
+                case CurrencyType.Coin:
+                    Player.Instance.Currency.AddCoin(paydown);
+                    break;
+
+                case CurrencyType.Gem:
+                    Player.Instance.Currency.AddGem(paydown);
+                    break;
+            }
             if(collectSfx) collectSfx.Play();
         }
         
