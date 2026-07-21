@@ -5,6 +5,7 @@ using GameTemplate.Runtime.GameData;
 using GameTemplate.Runtime.Utils;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Events;
 using WCore;
 
 namespace GameTemplate.Runtime.WGUI
@@ -19,6 +20,8 @@ namespace GameTemplate.Runtime.WGUI
         [SerializeField] private AudioSource collectSfx;
 
         private double _remainingPaydown;
+
+        public UnityEvent OnCurrencyUpdated;
 
         private void Start()
         {
@@ -110,6 +113,7 @@ namespace GameTemplate.Runtime.WGUI
         {
             Player.Instance.Save(true);
             currencySpawner.onLastParticleFinished.RemoveListener(OnLastParticleFinished);
+            OnCurrencyUpdated?.Invoke();
         }
 
         private void PayDownOutstanding()
