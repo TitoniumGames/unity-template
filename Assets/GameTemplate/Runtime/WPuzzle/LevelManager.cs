@@ -16,6 +16,7 @@ namespace WPuzzle
         
         [Title("Configs")]
         [SerializeField] private Transform _levelContainer;
+        [SerializeField] private bool _loadLevelOnStart;
         [Space(10)]
         [SerializeField] private bool _isLoop;
         [ShowIf("_isLoop")] private int _startLoopLevelNumber = 1;
@@ -41,7 +42,11 @@ namespace WPuzzle
                 Debug.LogError("LevelPrefab is not assigned in LevelManager");
                 return;
             }
-            StartLevel().Forget();
+
+            if (_loadLevelOnStart)
+            {
+                StartLoadLevel();
+            }
         }
 
         #endregion
@@ -113,6 +118,11 @@ namespace WPuzzle
         #endregion
 
         #region Public Methods
+
+        public void StartLoadLevel()
+        {
+            StartLevel().Forget();
+        }
         public void ReloadLevel()
         {
             int currentLevelNumber = _currentLevel.LevelNumber;
