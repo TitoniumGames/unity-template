@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using Cysharp.Threading.Tasks;
+using UnityEngine;
 using UnityEngine.Events;
 using WCore;
 
@@ -39,14 +40,14 @@ namespace Tito.Services.IAP
             OnInitializationFailed?.Invoke();
         }
         
-        public void Purchase(string productId)
+        public UniTask Purchase(string productId)
         {
-            provider.Purchase(productId);
+            return provider.Purchase(productId);
         }
 
-        public void RestorePurchases()
+        public UniTask RestorePurchases()
         {
-            provider.RestorePurchases();
+            return provider.RestorePurchases();
         }
 
         public bool IsPurchased(string productId)

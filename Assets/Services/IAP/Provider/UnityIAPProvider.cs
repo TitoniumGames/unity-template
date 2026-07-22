@@ -203,6 +203,7 @@ namespace Tito.Services.IAP.Provider
             {
                 m_IsPurchaseInProgress = false;
                 purchase.Status = PurchaseStatus.ProductNotFound;
+                Debug.LogError($"Product with ID {productId} not found in the store.");
             }
             return UniTask.FromResult(purchase);
         }
