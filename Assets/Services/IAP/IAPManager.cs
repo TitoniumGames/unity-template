@@ -4,7 +4,6 @@ using WCore;
 
 namespace Tito.Services.IAP
 {
-    [DefaultExecutionOrder(-100)]
     public class IAPManager: Singleton<IAPManager>
     {
         [Header("IAP Providers")] 
