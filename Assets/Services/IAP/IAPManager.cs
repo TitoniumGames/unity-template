@@ -48,17 +48,24 @@ namespace Tito.Services.IAP
             provider.RestorePurchases();
         }
 
-        private void Update()
+        public bool IsPurchased(string productId)
         {
-            if (Input.GetKeyDown(KeyCode.P))
-            {
-                Purchase(catalog.Products[0].Id);
-            }
+            return provider.IsPurchased(productId);
+        }
 
-            if (Input.GetKeyDown(KeyCode.R))
-            {
-                RestorePurchases();
-            }
+        public string GetLocalizedPrice(string productId)
+        {
+            return provider.GetLocalizedPrice(productId);
+        }
+        
+        public decimal GetPrice(string productId)
+        {
+            return provider.GetPrice(productId);
+        }
+
+        public string GetCurrencyCode(string productId)
+        {
+            return provider.GetCurrencyCode(productId);
         }
     }
 }
