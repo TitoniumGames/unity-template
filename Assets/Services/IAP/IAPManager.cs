@@ -40,7 +40,7 @@ namespace Tito.Services.IAP
             OnInitializationFailed?.Invoke();
         }
         
-        public UniTask Purchase(string productId)
+        public UniTask<PurchaseResult> Purchase(string productId)
         {
             return provider.Purchase(productId);
         }
