@@ -14,6 +14,9 @@ namespace Tito.Services.IAP
 
         [SerializeField]
         private bool _enabled = true;
+
+        [SerializeField] 
+        private float defaultPrice;
         
         [SerializeField]
         private string _displayName;
@@ -32,6 +35,8 @@ namespace Tito.Services.IAP
         public ProductType Type => _type;
 
         public bool Enabled => _enabled;
+        
+        public float DefaultPrice => defaultPrice;
         
         public string DisplayName => _displayName;
         public string Description => _description;
