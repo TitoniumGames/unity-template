@@ -1,16 +1,75 @@
-﻿using GameTemplate.Runtime.Core.Settings;
+﻿using System;
+using GameTemplate.Runtime.Core.Settings;
 using GameTemplate.Runtime.GameData;
 using UnityEngine;
+using UnityEngine.Events;
 using WCore;
+using WCore.Time;
 using WPuzzle;
 
 namespace GameTemplate.Runtime.Core
 {
+    public enum GameState
+    {
+        Playing,
+        Paused,
+        GameOver
+    }
+    
     public class GameManager: Singleton<GameManager>
     {
         [SerializeField] private ApplicationSettings applicationSettings;
         
         public bool IsInitializeOnStart => true;
+        
+        public GameState CurrentState { get; private set; } = GameState.Playing;
+        
+        public GameplayTime GameplayTimer => _gameplayTimer;
+        private GameplayTime _gameplayTimer;
+        
+        public UnityEvent onGameInitialized;
+        public UnityEvent onGamePaused;
+        public UnityEvent onGameResumed;
+        
+        /// <summary>
+        /// Pauses the game.
+        /// </summary>
+        public void PauseGame()
+        {
+            if (CurrentState != GameState.Playing)
+                return;
+                
+            CurrentState = GameState.Paused;
+            
+            // Pause gameplay time
+            _gameplayTimer?.Pause();
+            
+            // Pause time scale
+            Time.timeScale = 0f;
+            
+            // Trigger game paused event
+            onGamePaused?.Invoke();
+        }
+        
+        /// <summary>
+        /// Resumes the game.
+        /// </summary>
+        public void ResumeGame()
+        {
+            if (CurrentState != GameState.Paused)
+                return;
+                
+            CurrentState = GameState.Playing;
+            
+            // Resume time scale
+            Time.timeScale = 1f;
+            
+            // Resume gameplay time
+            _gameplayTimer?.Resume();
+            
+            // Trigger game resumed event
+            onGameResumed?.Invoke();
+        }
 
         protected override void Awake()
         {
@@ -21,6 +80,25 @@ namespace GameTemplate.Runtime.Core
                 Initialize();
             }
         }
+
+        private void Update()
+        {
+            // Tick gameplay time every frame
+            _gameplayTimer?.Tick();
+        }
+        
+        private void OnApplicationPause(bool pauseStatus)
+        {
+            if (pauseStatus)
+            {
+                PauseGame();
+            }
+            else
+            {
+                ResumeGame();
+            }
+        }
+        
 
         public void Initialize()
         {
@@ -33,6 +111,11 @@ namespace GameTemplate.Runtime.Core
 
             // Sync systems
             SettingManager.Instance.Sync();
+            
+            // Initialize global gameplay time
+            _gameplayTimer = GameplayTime.CreateGlobal();
+            _gameplayTimer.Restart();
+            onGameInitialized?.Invoke();
         }
     }
 }
