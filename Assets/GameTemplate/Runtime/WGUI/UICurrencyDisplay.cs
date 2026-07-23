@@ -27,7 +27,7 @@ namespace GameTemplate.Runtime.WGUI
 
         private void Start()
         {
-            currencySpawner.onAnyParticleFinished.AddListener(PayDownOutstanding);
+            if(currencySpawner) currencySpawner.onAnyParticleFinished.AddListener(PayDownOutstanding);
             EventBus<PlayerCurrencyChangedEvent>.Subscribe(OnCurrencyChanged);
         }
 
@@ -50,7 +50,7 @@ namespace GameTemplate.Runtime.WGUI
         
         private void OnApplicationQuit()
         {
-            if (currencySpawner.particleCount == 0)
+            if (currencySpawner == null || currencySpawner.particleCount == 0)
                 return;
 
             currencySpawner.Clear();
@@ -66,15 +66,15 @@ namespace GameTemplate.Runtime.WGUI
             }
 
             _remainingPaydown = 0f;
-            currencySpawner.Stop(true);
+            if(currencySpawner) currencySpawner.Stop(true);
         }
 
         private void OnApplicationFocus(bool focus)
         {
-            if (currencySpawner.particleCount == 0)
+            if (currencySpawner == null || currencySpawner.particleCount == 0)
                 return;
 
-            currencySpawner.Clear();
+            if(currencySpawner) currencySpawner.Clear();
             PayDownOutstanding();
         }
 
@@ -108,6 +108,11 @@ namespace GameTemplate.Runtime.WGUI
                 }
             }
 
+            if (currencySpawner == null)
+            {
+                return;
+            }
+
             currencySpawner.SetBurst(0, 0f, Mathf.Min(num, 35));
             currencySpawner.transform.position = position;
             currencySpawner.sprite = currencyConfig.Sprite;
@@ -118,13 +123,18 @@ namespace GameTemplate.Runtime.WGUI
         private void OnLastParticleFinished()
         {
             Player.Instance.Save(true);
-            currencySpawner.onLastParticleFinished.RemoveListener(OnLastParticleFinished);
+            if(currencySpawner) currencySpawner.onLastParticleFinished.RemoveListener(OnLastParticleFinished);
             OnCurrencyUpdated?.Invoke();
         }
 
         private void PayDownOutstanding()
         {
             double paydown;
+            
+            if (currencySpawner == null)
+            {
+                return;
+            }
 
             if (currencySpawner.particles.Count == 0)
             {
