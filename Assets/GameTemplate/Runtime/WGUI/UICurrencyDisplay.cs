@@ -29,9 +29,13 @@ namespace GameTemplate.Runtime.WGUI
         {
             currencySpawner.onAnyParticleFinished.AddListener(PayDownOutstanding);
             EventBus<PlayerCurrencyChangedEvent>.Subscribe(OnCurrencyChanged);
+        }
+
+        private void OnEnable()
+        {
             UpdateDisplayValue(currencyConfig.CurrencyType, GetCoinDisplayValue());
         }
-        
+
         private double GetCoinDisplayValue()
         {
             if(currencyConfig.CurrencyType == CurrencyType.Coin)
