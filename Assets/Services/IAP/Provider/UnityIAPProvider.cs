@@ -219,10 +219,12 @@ namespace Tito.Services.IAP.Provider
             {
                 if (success)
                 {
+                    EventBus<RestorePurchaseEvent>.Post(new RestorePurchaseEvent(true, error));
                     Debug.Log("UnityIAPProvider: Restore purchases successful");
                 }
                 else
                 {
+                    EventBus<RestorePurchaseEvent>.Post(new RestorePurchaseEvent(false, error));
                     Debug.LogError($"UnityIAPProvider: Restore purchases failed: {error}");
                 }
             });
