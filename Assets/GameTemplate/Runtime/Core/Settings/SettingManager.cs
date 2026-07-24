@@ -21,34 +21,25 @@ namespace GameTemplate.Runtime.Core.Settings
 
         public void SetMusic(bool value)
         {
-            if (Data.Music == value)
-                return;
-
             Data.Music = value;
             SaveAndNotify();
         }
 
         public void SetSfx(bool value)
         {
-            if (Data.Sfx == value)
-                return;
-
             Data.Sfx = value;
             SaveAndNotify();
         }
 
         public void SetHaptic(bool value)
         {
-            if (Data.Haptic == value)
-                return;
-
             Data.Haptic = value;
             SaveAndNotify();
         }
 
         private void SaveAndNotify()
         {
-            Save();
+            Save(true);
             EventBus<SettingEvent>.Post(new SettingEvent(Data));
         }
 
