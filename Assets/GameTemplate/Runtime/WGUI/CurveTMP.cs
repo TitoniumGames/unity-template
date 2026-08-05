@@ -24,6 +24,7 @@ namespace GameTemplate.Runtime.WGUI
         private float m_LastCurveAmount;
         private bool m_LastRotate;
 
+
         IEnumerator Start()
         {
             m_TextComponent = GetComponent<TMP_Text>();
@@ -35,7 +36,6 @@ namespace GameTemplate.Runtime.WGUI
                 yield break;
             }
 
-            // Đợi 2 frame để TextMeshPro khởi tạo xong mesh
             yield return null;
             yield return null;
 

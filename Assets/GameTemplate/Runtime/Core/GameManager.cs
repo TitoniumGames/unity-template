@@ -111,10 +111,13 @@ namespace GameTemplate.Runtime.Core
 
             // Sync systems
             SettingManager.Instance.Sync();
+            if (GameplayTime.Instance == null)
+            {
+                _gameplayTimer = GameplayTime.CreateGlobal();
+                _gameplayTimer.Restart();
+            }
             
             // Initialize global gameplay time
-            _gameplayTimer = GameplayTime.CreateGlobal();
-            _gameplayTimer.Restart();
             onGameInitialized?.Invoke();
         }
     }
