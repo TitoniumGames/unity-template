@@ -19,7 +19,8 @@ namespace WPuzzle
         [SerializeField] private bool _loadLevelOnStart;
         [Space(10)]
         [SerializeField] private bool _isLoop;
-        [ShowIf("_isLoop")] private int _startLoopLevelNumber = 1;
+        [ShowIf("_isLoop")] 
+        [SerializeField] private int _startLoopLevelNumber = 1;
 
         private LevelBase _currentLevel;
         private AsyncOperationHandle<LevelDataSO> _currentLevelHandle;
