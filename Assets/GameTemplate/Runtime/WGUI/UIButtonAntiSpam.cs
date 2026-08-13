@@ -6,6 +6,7 @@ using UnityEngine.UI;
 
 namespace GameTemplate.Runtime.WGUI
 {
+    [DefaultExecutionOrder(-100)]
     [RequireComponent(typeof(Button))]
     public class UIButtonAntiSpam : MonoBehaviour
     {
