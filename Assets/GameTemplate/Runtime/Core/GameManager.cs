@@ -31,6 +31,8 @@ namespace GameTemplate.Runtime.Core
         public UnityEvent onGamePaused;
         public UnityEvent onGameResumed;
         
+        private bool _isInitialized;
+        
         /// <summary>
         /// Pauses the game.
         /// </summary>
@@ -75,6 +77,9 @@ namespace GameTemplate.Runtime.Core
         {
             base.Awake();
 
+            if (Instance != this)
+                return;
+
             if (IsInitializeOnStart)
             {
                 Initialize();
@@ -102,6 +107,11 @@ namespace GameTemplate.Runtime.Core
 
         public void Initialize()
         {
+            if (_isInitialized)
+                return;
+
+            _isInitialized = true;
+
             if (applicationSettings == null)
             {
                 applicationSettings = ScriptableObject.CreateInstance<ApplicationSettings>();
@@ -109,15 +119,16 @@ namespace GameTemplate.Runtime.Core
 
             Application.targetFrameRate = applicationSettings.TargetFPS;
 
-            // Sync systems
             SettingManager.Instance.Sync();
-            if (GameplayTime.Instance == null)
+
+            _gameplayTimer = GameplayTime.Instance;
+
+            if (_gameplayTimer == null)
             {
                 _gameplayTimer = GameplayTime.CreateGlobal();
                 _gameplayTimer.Restart();
             }
-            
-            // Initialize global gameplay time
+
             onGameInitialized?.Invoke();
         }
     }
