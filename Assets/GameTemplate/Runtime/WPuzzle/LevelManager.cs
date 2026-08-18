@@ -201,7 +201,7 @@ namespace WPuzzle
             }
         }
 
-        private void UnloadCurrentLevel()
+        public void UnloadCurrentLevel()
         {
             if (_currentLevel != null)
             {
