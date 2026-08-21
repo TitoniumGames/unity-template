@@ -140,14 +140,59 @@ namespace Tito.Services.IAP.Provider
 
         private void OnPurchasesFetched(Orders orders)
         {
-            Debug.Log("UnityIAPProvider: OnPurchasesFetched");
+            Debug.Log("UnityIAPProvider: OnPurchasesFetched - Processing restored/confirmed purchases");
+            
+            // Handle confirmed orders (successfully completed purchases - for restoration)
             foreach (var confirmedOrder in orders.ConfirmedOrders)
             {
-                if (confirmedOrder.CartOrdered.Items().FirstOrDefault()?.Product.definition.type !=
-                    UnityEngine.Purchasing.ProductType.Consumable)
+                var product = confirmedOrder.CartOrdered.Items().FirstOrDefault()?.Product;
+                if (product == null)
+                    continue;
+
+                // For non-consumable products and subscriptions, handle restoration
+                if (product.definition.type != UnityEngine.Purchasing.ProductType.Consumable)
                 {
-                    // handle restore purchase for android
+                    var transactionId = confirmedOrder.Info.TransactionID;
+                    
+                    // Skip if already processed in this session
+                    if (m_ProcessedTransactionIds.Contains(transactionId))
+                    {
+                        Debug.Log($"Confirmed order already processed: {transactionId}");
+                        continue;
+                    }
+
+                    Debug.Log($"Restored purchase: {product.definition.id} - {transactionId}");
+                    m_ProcessedTransactionIds.Add(transactionId);
+                    
+                    // Post restore event to grant access
+                    EventBus<PurchaseSuccessEvent>.Post(
+                        new PurchaseSuccessEvent(
+                            product.definition.catalogListingId,
+                            transactionId,
+                            confirmedOrder.Info.Receipt));
                 }
+            }
+
+            // Handle pending orders that need confirmation
+            // These orders haven't been fulfilled yet and need to be confirmed
+            foreach (var pendingOrder in orders.PendingOrders)
+            {
+                var product = pendingOrder.CartOrdered.Items().FirstOrDefault()?.Product;
+                if (product == null)
+                    continue;
+
+                var transactionId = pendingOrder.Info.TransactionID;
+                
+                // Check if already processed
+                if (m_ProcessedTransactionIds.Contains(transactionId))
+                {
+                    Debug.Log($"Pending order already processed: {transactionId}");
+                    continue;
+                }
+
+                // Confirm pending orders (for restore purchases and retry scenarios)
+                Debug.Log($"Confirming pending order for restoration: {product.definition.id}");
+                m_StoreController.ConfirmPurchase(pendingOrder);
             }
         }
 
@@ -158,8 +203,12 @@ namespace Tito.Services.IAP.Provider
 
         private void OnProductsFetched(List<Product> obj)
         {
+            Debug.Log($"UnityIAPProvider: Products fetched ({obj.Count} products)");
+            
+            // On Google Play: FetchPurchases() automatically restores owned products after reinstall
+            // This will trigger OnPurchasesFetched which handles the restoration flow
             m_StoreController.FetchPurchases();
-            Debug.Log("UnityIAPProvider: Products fetched");
+            Debug.Log("UnityIAPProvider: Fetching purchases to restore owned products");
         }
 
         private void OnStoreDisconnected(StoreConnectionFailureDescription description)
@@ -215,19 +264,28 @@ namespace Tito.Services.IAP.Provider
                 Debug.LogError("StoreController is not initialized. Please initialize the IAP provider first.");
                 return UniTask.CompletedTask;
             }
+
             m_StoreController.RestoreTransactions((success, error) =>
             {
                 if (success)
                 {
-                    EventBus<RestorePurchaseEvent>.Post(new RestorePurchaseEvent(true, error));
-                    Debug.Log("UnityIAPProvider: Restore purchases successful");
+                    Debug.Log("UnityIAPProvider: RestoreTransactions successful - Now fetching purchases");
+                    
+                    // According to Unity IAP documentation:
+                    // After RestoreTransactions succeeds, we must call FetchPurchases() to retrieve
+                    // all restored purchases. This will trigger OnPurchasesFetched with all transactions.
+                    m_StoreController.FetchPurchases();
+                    
+                    // Note: The actual restore event will be posted from OnPurchasesFetched
+                    // after all purchases have been processed
                 }
                 else
                 {
-                    EventBus<RestorePurchaseEvent>.Post(new RestorePurchaseEvent(false, error));
                     Debug.LogError($"UnityIAPProvider: Restore purchases failed: {error}");
+                    EventBus<RestorePurchaseEvent>.Post(new RestorePurchaseEvent(false, error));
                 }
             });
+            
             return UniTask.CompletedTask;
         }
 
