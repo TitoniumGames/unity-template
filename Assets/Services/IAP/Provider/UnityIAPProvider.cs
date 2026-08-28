@@ -69,10 +69,14 @@ namespace Tito.Services.IAP.Provider
                 Debug.Log($"Pending product: {product.CatalogListingId}, quantity: {product.Quantity}");
             }
 
-            ProcessPurchase(pendingOrder);
+            // Process new purchases (từ user action - click buy)
+            ProcessNewPurchase(pendingOrder);
         }
         
-        private UniTask ProcessPurchase(PendingOrder pendingOrder)
+        /// <summary>
+        /// Process new Purchase
+        /// </summary>
+        private UniTask ProcessNewPurchase(PendingOrder pendingOrder)
         {
             string receipt = pendingOrder.Info.Receipt;
 
@@ -88,25 +92,67 @@ namespace Tito.Services.IAP.Provider
                 Debug.LogError("Purchase failed: Product is null.");
                 return UniTask.CompletedTask;
             }
-
-            var transitionId = pendingOrder.Info.TransactionID;
-            if (m_ProcessedTransactionIds.Contains(transitionId))
-            {
-                Debug.Log($"Duplicate transaction ignored: {transitionId}");
-                return UniTask.CompletedTask;
-            }
-
+            
+            Debug.Log($"Confirming new purchase: {product.definition.id}");
             m_StoreController.ConfirmPurchase(pendingOrder);
             return UniTask.CompletedTask;
+        }
+
+        /// <summary>
+        /// Xử lý purchase RESTORE (từ OnPurchasesFetched - khi app restart)
+        /// </summary>
+        private void ProcessRestoredPurchase(PendingOrder pendingOrder)
+        {
+            string receipt = pendingOrder.Info.Receipt;
+
+            if (string.IsNullOrEmpty(receipt))
+            {
+                Debug.LogError("Restored purchase failed: Receipt is null or empty.");
+                return;
+            }
+
+            var product = pendingOrder.CartOrdered.Items().FirstOrDefault()?.Product;
+            if (product == null)
+            {
+                Debug.LogError("Restored purchase failed: Product is null.");
+                return;
+            }
+
+            var transactionId = pendingOrder.Info.TransactionID;
+            
+            // ✅ Check duplicate chỉ cho restore purchases
+            if (m_ProcessedTransactionIds.Contains(transactionId))
+            {
+                Debug.Log($"Restored purchase already processed: {transactionId}");
+                return;
+            }
+
+            Debug.Log($"Confirming restored purchase: {product.definition.id}");
+            m_ProcessedTransactionIds.Add(transactionId);
+            m_StoreController.ConfirmPurchase(pendingOrder);
         }
 
         
         private void OnPurchaseFailed(FailedOrder failedOrder)
         {
-            Debug.Log($"Purchase failed for product: {failedOrder.Info}, reason: {failedOrder.FailureReason}");
+            Debug.LogError($"OnPurchaseFailed: {failedOrder.Info}, reason: {failedOrder.FailureReason}");
+            
             var product = failedOrder.CartOrdered.Items().FirstOrDefault()?.Product;
+            if (product == null)
+            {
+                Debug.LogError("OnPurchaseFailed: Product is null");
+                m_IsPurchaseInProgress = false;
+                return;
+            }
+
             m_IsPurchaseInProgress = false;
-            EventBus<PurchaseFailedEvent>.Post(new PurchaseFailedEvent(product.definition.catalogListingId, PurchaseStatus.Failed, failedOrder.FailureReason.ToString()));
+            Debug.Log($"UnityIAPProvider: Purchase in progress flag reset");
+            
+            EventBus<PurchaseFailedEvent>.Post(
+                new PurchaseFailedEvent(
+                    product.definition.catalogListingId, 
+                    PurchaseStatus.Failed, 
+                    failedOrder.FailureReason.ToString()));
         }
         
         private void OnStoreConnected()
@@ -124,13 +170,31 @@ namespace Tito.Services.IAP.Provider
             }
 
             var product = order.CartOrdered.Items().FirstOrDefault()?.Product;
+            if (product == null)
+            {
+                Debug.LogError("OnPurchaseConfirmed: Product is null");
+                m_IsPurchaseInProgress = false;
+                return;
+            }
 
-            // Mark as processed now that the full flow has completed successfully
-            m_ProcessedTransactionIds.Add(order.Info?.TransactionID);
+            var transactionId = order.Info?.TransactionID;
+            
+            // ✅ Mark as processed (track both new purchases and restored ones)
+            if (!string.IsNullOrEmpty(transactionId))
+            {
+                m_ProcessedTransactionIds.Add(transactionId);
+                Debug.Log($"UnityIAPProvider: Purchase confirmed - Transaction tracked: {transactionId}");
+            }
 
-            Debug.Log($"UnityIAPProvider: Purchase confirmed for product {order.Info.Receipt}");
+            Debug.Log($"UnityIAPProvider: Purchase confirmed for product {product.definition.id}");
             m_IsPurchaseInProgress = false;
-            EventBus<PurchaseSuccessEvent>.Post(new PurchaseSuccessEvent(product.definition.catalogListingId, order.Info.TransactionID, order.Info.Receipt));
+            
+            // ✅ Post event to grant access
+            EventBus<PurchaseSuccessEvent>.Post(
+                new PurchaseSuccessEvent(
+                    product.definition.catalogListingId, 
+                    transactionId, 
+                    order.Info.Receipt));
         }
 
         private void OnPurchasesFetchFailed(PurchasesFetchFailureDescription obj)
@@ -173,7 +237,7 @@ namespace Tito.Services.IAP.Provider
                 }
             }
 
-            // Handle pending orders that need confirmation
+            // Handle pending orders that need confirmation (restore/retry scenarios)
             // These orders haven't been fulfilled yet and need to be confirmed
             foreach (var pendingOrder in orders.PendingOrders)
             {
@@ -181,18 +245,8 @@ namespace Tito.Services.IAP.Provider
                 if (product == null)
                     continue;
 
-                var transactionId = pendingOrder.Info.TransactionID;
-                
-                // Check if already processed
-                if (m_ProcessedTransactionIds.Contains(transactionId))
-                {
-                    Debug.Log($"Pending order already processed: {transactionId}");
-                    continue;
-                }
-
-                // Confirm pending orders (for restore purchases and retry scenarios)
-                Debug.Log($"Confirming pending order for restoration: {product.definition.id}");
-                m_StoreController.ConfirmPurchase(pendingOrder);
+                // Process as restored purchase (có duplicate check)
+                ProcessRestoredPurchase(pendingOrder);
             }
         }
 
@@ -221,6 +275,7 @@ namespace Tito.Services.IAP.Provider
         public override UniTask<PurchaseResult> Purchase(string productId)
         {
             var purchase = new PurchaseResult();
+            
             if (m_IsPurchaseInProgress)
             {
                 Debug.LogWarning("Purchase already in progress. Please wait for the current purchase to complete.");
@@ -236,24 +291,38 @@ namespace Tito.Services.IAP.Provider
                 purchase.Error = "StoreController is not initialized.";
                 return UniTask.FromResult(purchase);
             }
+            
             if (!IsInitialized)
             {
                 purchase.Status = PurchaseStatus.NotInitialized;
                 return UniTask.FromResult(purchase);
             }
+
             var product = m_StoreController.GetProductById(productId);
-            m_IsPurchaseInProgress = true;
-            if (product != null)
+            if (product == null)
             {
-                m_StoreController.PurchaseProduct(product);
-                purchase.Status = PurchaseStatus.Pending;
-            }
-            else
-            {
-                m_IsPurchaseInProgress = false;
                 purchase.Status = PurchaseStatus.ProductNotFound;
                 Debug.LogError($"Product with ID {productId} not found in the store.");
+                return UniTask.FromResult(purchase);
             }
+
+            // ✅ Check: Non-consumable product đã owned chưa?
+            if (product.definition.type != UnityEngine.Purchasing.ProductType.Consumable)
+            {
+                if (IsPurchased(productId))
+                {
+                    Debug.LogWarning($"Product {productId} already owned. Cannot purchase again.");
+                    purchase.Status = PurchaseStatus.Failed;
+                    purchase.Error = "This item has already been purchased.";
+                    return UniTask.FromResult(purchase);
+                }
+            }
+
+            // ✅ Proceed with purchase
+            m_IsPurchaseInProgress = true;
+            m_StoreController.PurchaseProduct(product);
+            purchase.Status = PurchaseStatus.Pending;
+            
             return UniTask.FromResult(purchase);
         }
 
