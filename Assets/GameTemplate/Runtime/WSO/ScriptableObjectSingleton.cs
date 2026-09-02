@@ -1,0 +1,36 @@
+using UnityEngine;
+
+namespace WSO
+{
+    public abstract class ScriptableObjectSingleton<T> : ScriptableObject where T : ScriptableObject
+    {
+        private const string RootFolderName = "ScriptableObjectSingleton";
+
+        private static T s_instance = null;
+
+        public static T Instance
+        {
+            get
+            {
+                if (s_instance == null)
+                {
+                    s_instance = Resources.Load<T>($"{RootFolderName}/{typeof(T)}");
+
+#if UNITY_EDITOR
+                    if (s_instance == null)
+                    {
+                        string configPath = $"Assets/Resources/{RootFolderName}/";
+
+                        if (!System.IO.Directory.Exists(configPath))
+                            System.IO.Directory.CreateDirectory(configPath);
+
+                        s_instance = ScriptableObjectHelper.CreateAsset<T>(configPath, typeof(T).ToString());
+                    }
+#endif
+                }
+
+                return s_instance;
+            }
+        }
+    }
+}
