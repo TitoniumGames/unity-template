@@ -7,39 +7,35 @@ using Tito.Services.IAP.Events;
 using UnityEngine;
 using UnityEngine.Purchasing;
 
-
 namespace Tito.Services.IAP.Provider
 {
     [CreateAssetMenu(fileName = "UnityIAPProvider", menuName = "GameTemplate/IAP/UnityIAPProvider")]
-    public class UnityIAPProvider: IAPProvider
+    public class UnityIAPProvider : IAPProvider
     {
         public override Action Initialized { get; set; }
         public override Action InitializeFailed { get; set; }
 
         private StoreController m_StoreController;
         private bool m_IsPurchaseInProgress;
+        private bool m_AwaitingRestorePurchasesFetch;
+        private string m_PendingRestoreMessage;
         private readonly HashSet<string> m_ProcessedTransactionIds = new HashSet<string>();
-        
+
         public override async UniTask Initialize(IAPCatalog catalog)
         {
             var catalogProvider = new CatalogProvider();
             foreach (var product in catalog.Products)
             {
                 if (product.Enabled)
-                {
                     catalogProvider.AddProduct(product.Id, Convert(product.Type));
-                }
             }
-            // Get StoreController
+
             m_StoreController = UnityIAPServices.StoreController();
 
-            // Add event listeners
             m_StoreController.OnStoreDisconnected += OnStoreDisconnected;
             m_StoreController.OnStoreConnected += OnStoreConnected;
-
             m_StoreController.OnProductsFetched += OnProductsFetched;
             m_StoreController.OnProductsFetchFailed += OnProductsFetchFailed;
-
             m_StoreController.OnPurchasesFetched += OnPurchasesFetched;
             m_StoreController.OnPurchasesFetchFailed += OnPurchasesFetchFailed;
             m_StoreController.OnPurchaseConfirmed += OnPurchaseConfirmed;
@@ -47,207 +43,206 @@ namespace Tito.Services.IAP.Provider
             m_StoreController.OnPurchaseFailed += OnPurchaseFailed;
             m_StoreController.OnPurchaseDeferred += OnPurchaseDeferred;
 
-            // Connect to store
             await m_StoreController.Connect();
             catalogProvider.FetchProducts(list => m_StoreController.FetchProducts(list));
             Debug.Log("UnityIAPProvider: Initialized");
             IsInitialized = true;
             Initialized?.Invoke();
         }
-        
+
         private void OnPurchaseDeferred(DeferredOrder order)
         {
             Debug.Log($"Purchase deferred: {order.Info}");
         }
-        
+
         private void OnPurchasePending(PendingOrder pendingOrder)
         {
             Debug.Log($"Purchase pending for product: {pendingOrder.Info}");
-            
+
             foreach (var product in pendingOrder.CartOrdered.Items())
-            {
                 Debug.Log($"Pending product: {product.CatalogListingId}, quantity: {product.Quantity}");
-            }
 
-            // Process new purchases (từ user action - click buy)
-            ProcessNewPurchase(pendingOrder);
+            ProcessPurchase(pendingOrder);
         }
-        
-        /// <summary>
-        /// Process new Purchase
-        /// </summary>
-        private UniTask ProcessNewPurchase(PendingOrder pendingOrder)
-        {
-            string receipt = pendingOrder.Info.Receipt;
 
-            if (string.IsNullOrEmpty(receipt))
+        private void ProcessPurchase(PendingOrder pendingOrder)
+        {
+            if (pendingOrder == null || m_StoreController == null)
             {
-                Debug.LogError("Purchase failed: Receipt is null or empty.");
-                return UniTask.CompletedTask;
+                m_IsPurchaseInProgress = false;
+                return;
             }
 
             var product = pendingOrder.CartOrdered.Items().FirstOrDefault()?.Product;
             if (product == null)
             {
                 Debug.LogError("Purchase failed: Product is null.");
-                return UniTask.CompletedTask;
-            }
-            
-            Debug.Log($"Confirming new purchase: {product.definition.id}");
-            m_StoreController.ConfirmPurchase(pendingOrder);
-            return UniTask.CompletedTask;
-        }
-
-        /// <summary>
-        /// Xử lý purchase RESTORE (từ OnPurchasesFetched - khi app restart)
-        /// </summary>
-        private void ProcessRestoredPurchase(PendingOrder pendingOrder)
-        {
-            string receipt = pendingOrder.Info.Receipt;
-
-            if (string.IsNullOrEmpty(receipt))
-            {
-                Debug.LogError("Restored purchase failed: Receipt is null or empty.");
-                return;
-            }
-
-            var product = pendingOrder.CartOrdered.Items().FirstOrDefault()?.Product;
-            if (product == null)
-            {
-                Debug.LogError("Restored purchase failed: Product is null.");
-                return;
-            }
-
-            var transactionId = pendingOrder.Info.TransactionID;
-            
-            // ✅ Check duplicate chỉ cho restore purchases
-            if (m_ProcessedTransactionIds.Contains(transactionId))
-            {
-                Debug.Log($"Restored purchase already processed: {transactionId}");
-                return;
-            }
-
-            Debug.Log($"Confirming restored purchase: {product.definition.id}");
-            m_ProcessedTransactionIds.Add(transactionId);
-            m_StoreController.ConfirmPurchase(pendingOrder);
-        }
-
-        
-        private void OnPurchaseFailed(FailedOrder failedOrder)
-        {
-            Debug.LogError($"OnPurchaseFailed: {failedOrder.Info}, reason: {failedOrder.FailureReason}");
-            
-            var product = failedOrder.CartOrdered.Items().FirstOrDefault()?.Product;
-            if (product == null)
-            {
-                Debug.LogError("OnPurchaseFailed: Product is null");
                 m_IsPurchaseInProgress = false;
                 return;
             }
 
-            m_IsPurchaseInProgress = false;
-            Debug.Log($"UnityIAPProvider: Purchase in progress flag reset");
-            
-            EventBus<PurchaseFailedEvent>.Post(
-                new PurchaseFailedEvent(
-                    product.definition.catalogListingId, 
-                    PurchaseStatus.Failed, 
-                    failedOrder.FailureReason.ToString()));
+            var transactionId = pendingOrder.Info?.TransactionID;
+            if (!string.IsNullOrEmpty(transactionId) &&
+                m_ProcessedTransactionIds.Contains(transactionId))
+            {
+                // Client already granted; still confirm so Google/Apple do not keep it pending.
+                Debug.Log($"Confirming already-processed transaction: {transactionId}");
+                m_StoreController.ConfirmPurchase(pendingOrder);
+                m_IsPurchaseInProgress = false;
+                return;
+            }
+
+            if (string.IsNullOrEmpty(pendingOrder.Info?.Receipt))
+                Debug.LogWarning("Purchase receipt is empty; confirming pending order anyway.");
+
+            m_StoreController.ConfirmPurchase(pendingOrder);
         }
-        
+
+        private void OnPurchaseFailed(FailedOrder failedOrder)
+        {
+            m_IsPurchaseInProgress = false;
+
+            var cartItem = failedOrder?.CartOrdered?.Items()?.FirstOrDefault();
+            var product = cartItem?.Product;
+            var productId = product?.definition?.catalogListingId ?? cartItem?.CatalogListingId;
+            var reason = failedOrder != null
+                ? failedOrder.FailureReason
+                : PurchaseFailureReason.Unknown;
+
+            Debug.Log($"Purchase failed for product: {failedOrder?.Info}, reason: {reason}");
+
+            if (!string.IsNullOrEmpty(productId) &&
+                IsRecoverableOwnershipFailure(reason) &&
+                IsNonConsumableProduct(product))
+            {
+                if (TryConfirmPendingForProduct(productId))
+                {
+                    Debug.Log(
+                        $"UnityIAPProvider: Confirmed pending order after {reason} for {productId}");
+                    return;
+                }
+
+                Debug.Log($"UnityIAPProvider: Treating {reason} as owned restore for {productId}");
+                EventBus<PurchaseSuccessEvent>.Post(new PurchaseSuccessEvent(
+                    productId,
+                    $"restore:{reason}",
+                    string.Empty));
+                return;
+            }
+
+            EventBus<PurchaseFailedEvent>.Post(new PurchaseFailedEvent(
+                productId ?? "unknown",
+                PurchaseStatus.Failed,
+                reason.ToString()));
+        }
+
+        private static bool IsRecoverableOwnershipFailure(PurchaseFailureReason reason)
+        {
+            return reason == PurchaseFailureReason.DuplicateTransaction ||
+                   reason == PurchaseFailureReason.ExistingPurchasePending;
+        }
+
+        private static bool IsNonConsumableProduct(Product product)
+        {
+            if (product == null)
+                return true;
+
+            var type = product.definition != null ? product.definition.type : product.type;
+            return type != UnityEngine.Purchasing.ProductType.Consumable;
+        }
+
+        private bool TryConfirmPendingForProduct(string productId)
+        {
+            if (m_StoreController == null || string.IsNullOrEmpty(productId))
+                return false;
+
+            foreach (var order in m_StoreController.GetPurchases())
+            {
+                if (order is not PendingOrder pending)
+                    continue;
+
+                var item = pending.CartOrdered.Items().FirstOrDefault();
+                if (item == null)
+                    continue;
+
+                var listingId = item.CatalogListingId ?? item.Product?.definition?.catalogListingId;
+                if (!string.Equals(listingId, productId, StringComparison.Ordinal))
+                    continue;
+
+                ProcessPurchase(pending);
+                return true;
+            }
+
+            return false;
+        }
+
         private void OnStoreConnected()
         {
             Debug.Log("UnityIAPProvider: Store connected");
             m_IsPurchaseInProgress = false;
         }
-        
+
         private void OnPurchaseConfirmed(Order order)
         {
             if (order is FailedOrder failedOrder)
             {
-                Debug.LogError($"Purchase failed for product: {failedOrder.Info}, reason: {failedOrder.FailureReason}");
+                Debug.LogError(
+                    $"Purchase failed for product: {failedOrder.Info}, reason: {failedOrder.FailureReason}");
+                m_IsPurchaseInProgress = false;
                 return;
             }
 
             var product = order.CartOrdered.Items().FirstOrDefault()?.Product;
-            if (product == null)
+            var productId = product?.definition?.catalogListingId;
+            if (string.IsNullOrEmpty(productId))
             {
-                Debug.LogError("OnPurchaseConfirmed: Product is null");
+                Debug.LogError("Purchase confirmed but product id is missing.");
                 m_IsPurchaseInProgress = false;
                 return;
             }
 
             var transactionId = order.Info?.TransactionID;
-            
-            // ✅ Mark as processed (track both new purchases and restored ones)
             if (!string.IsNullOrEmpty(transactionId))
-            {
                 m_ProcessedTransactionIds.Add(transactionId);
-                Debug.Log($"UnityIAPProvider: Purchase confirmed - Transaction tracked: {transactionId}");
-            }
 
-            Debug.Log($"UnityIAPProvider: Purchase confirmed for product {product.definition.id}");
+            Debug.Log($"UnityIAPProvider: Purchase confirmed for {productId}");
             m_IsPurchaseInProgress = false;
-            
-            // ✅ Post event to grant access
-            EventBus<PurchaseSuccessEvent>.Post(
-                new PurchaseSuccessEvent(
-                    product.definition.catalogListingId, 
-                    transactionId, 
-                    order.Info.Receipt));
+            EventBus<PurchaseSuccessEvent>.Post(new PurchaseSuccessEvent(
+                productId,
+                transactionId,
+                order.Info?.Receipt));
         }
 
         private void OnPurchasesFetchFailed(PurchasesFetchFailureDescription obj)
         {
             Debug.LogError($"UnityIAPProvider: Purchase fetch failed: {obj}");
+            if (!m_AwaitingRestorePurchasesFetch)
+                return;
+
+            m_AwaitingRestorePurchasesFetch = false;
+            // Store restore itself succeeded; still notify so the game can sync from current cache.
+            EventBus<RestorePurchaseEvent>.Post(
+                new RestorePurchaseEvent(true, m_PendingRestoreMessage));
         }
 
         private void OnPurchasesFetched(Orders orders)
         {
-            Debug.Log("UnityIAPProvider: OnPurchasesFetched - Processing restored/confirmed purchases");
-            
-            // Handle confirmed orders (successfully completed purchases - for restoration)
-            foreach (var confirmedOrder in orders.ConfirmedOrders)
+            Debug.Log("UnityIAPProvider: OnPurchasesFetched");
+
+            // Finish any interrupted NonConsumable payments left pending on the store.
+            if (orders?.PendingOrders != null)
             {
-                var product = confirmedOrder.CartOrdered.Items().FirstOrDefault()?.Product;
-                if (product == null)
-                    continue;
-
-                // For non-consumable products and subscriptions, handle restoration
-                if (product.definition.type != UnityEngine.Purchasing.ProductType.Consumable)
-                {
-                    var transactionId = confirmedOrder.Info.TransactionID;
-                    
-                    // Skip if already processed in this session
-                    if (m_ProcessedTransactionIds.Contains(transactionId))
-                    {
-                        Debug.Log($"Confirmed order already processed: {transactionId}");
-                        continue;
-                    }
-
-                    Debug.Log($"Restored purchase: {product.definition.id} - {transactionId}");
-                    m_ProcessedTransactionIds.Add(transactionId);
-                    
-                    // Post restore event to grant access
-                    EventBus<PurchaseSuccessEvent>.Post(
-                        new PurchaseSuccessEvent(
-                            product.definition.catalogListingId,
-                            transactionId,
-                            confirmedOrder.Info.Receipt));
-                }
+                foreach (var pending in orders.PendingOrders)
+                    ProcessPurchase(pending);
             }
 
-            // Handle pending orders that need confirmation (restore/retry scenarios)
-            // These orders haven't been fulfilled yet and need to be confirmed
-            foreach (var pendingOrder in orders.PendingOrders)
-            {
-                var product = pendingOrder.CartOrdered.Items().FirstOrDefault()?.Product;
-                if (product == null)
-                    continue;
+            if (!m_AwaitingRestorePurchasesFetch)
+                return;
 
-                // Process as restored purchase (có duplicate check)
-                ProcessRestoredPurchase(pendingOrder);
-            }
+            m_AwaitingRestorePurchasesFetch = false;
+            EventBus<RestorePurchaseEvent>.Post(
+                new RestorePurchaseEvent(true, m_PendingRestoreMessage));
+            Debug.Log("UnityIAPProvider: Restore purchases successful (purchases fetched)");
         }
 
         private void OnProductsFetchFailed(ProductFetchFailed obj)
@@ -257,28 +252,23 @@ namespace Tito.Services.IAP.Provider
 
         private void OnProductsFetched(List<Product> obj)
         {
-            Debug.Log($"UnityIAPProvider: Products fetched ({obj.Count} products)");
-            
-            // On Google Play: FetchPurchases() automatically restores owned products after reinstall
-            // This will trigger OnPurchasesFetched which handles the restoration flow
             m_StoreController.FetchPurchases();
-            Debug.Log("UnityIAPProvider: Fetching purchases to restore owned products");
+            Debug.Log("UnityIAPProvider: Products fetched");
         }
 
         private void OnStoreDisconnected(StoreConnectionFailureDescription description)
         {
             Debug.LogError($"Store disconnected: {description.Message}");
-            InitializeFailed.Invoke();
+            InitializeFailed?.Invoke();
         }
-        
 
         public override UniTask<PurchaseResult> Purchase(string productId)
         {
             var purchase = new PurchaseResult();
-            
             if (m_IsPurchaseInProgress)
             {
-                Debug.LogWarning("Purchase already in progress. Please wait for the current purchase to complete.");
+                Debug.LogWarning(
+                    "Purchase already in progress. Please wait for the current purchase to complete.");
                 purchase.Status = PurchaseStatus.Failed;
                 purchase.Error = "Purchase already in progress.";
                 return UniTask.FromResult(purchase);
@@ -286,12 +276,13 @@ namespace Tito.Services.IAP.Provider
 
             if (m_StoreController == null)
             {
-                Debug.LogError("StoreController is not initialized. Please initialize the IAP provider first.");
+                Debug.LogError(
+                    "StoreController is not initialized. Please initialize the IAP provider first.");
                 purchase.Status = PurchaseStatus.Failed;
                 purchase.Error = "StoreController is not initialized.";
                 return UniTask.FromResult(purchase);
             }
-            
+
             if (!IsInitialized)
             {
                 purchase.Status = PurchaseStatus.NotInitialized;
@@ -299,30 +290,19 @@ namespace Tito.Services.IAP.Provider
             }
 
             var product = m_StoreController.GetProductById(productId);
-            if (product == null)
+            m_IsPurchaseInProgress = true;
+            if (product != null)
             {
+                m_StoreController.PurchaseProduct(product);
+                purchase.Status = PurchaseStatus.Pending;
+            }
+            else
+            {
+                m_IsPurchaseInProgress = false;
                 purchase.Status = PurchaseStatus.ProductNotFound;
                 Debug.LogError($"Product with ID {productId} not found in the store.");
-                return UniTask.FromResult(purchase);
             }
 
-            // ✅ Check: Non-consumable product đã owned chưa?
-            if (product.definition.type != UnityEngine.Purchasing.ProductType.Consumable)
-            {
-                if (IsPurchased(productId))
-                {
-                    Debug.LogWarning($"Product {productId} already owned. Cannot purchase again.");
-                    purchase.Status = PurchaseStatus.Failed;
-                    purchase.Error = "This item has already been purchased.";
-                    return UniTask.FromResult(purchase);
-                }
-            }
-
-            // ✅ Proceed with purchase
-            m_IsPurchaseInProgress = true;
-            m_StoreController.PurchaseProduct(product);
-            purchase.Status = PurchaseStatus.Pending;
-            
             return UniTask.FromResult(purchase);
         }
 
@@ -330,31 +310,26 @@ namespace Tito.Services.IAP.Provider
         {
             if (m_StoreController == null)
             {
-                Debug.LogError("StoreController is not initialized. Please initialize the IAP provider first.");
+                Debug.LogError(
+                    "StoreController is not initialized. Please initialize the IAP provider first.");
                 return UniTask.CompletedTask;
             }
 
             m_StoreController.RestoreTransactions((success, error) =>
             {
-                if (success)
+                if (!success)
                 {
-                    Debug.Log("UnityIAPProvider: RestoreTransactions successful - Now fetching purchases");
-                    
-                    // According to Unity IAP documentation:
-                    // After RestoreTransactions succeeds, we must call FetchPurchases() to retrieve
-                    // all restored purchases. This will trigger OnPurchasesFetched with all transactions.
-                    m_StoreController.FetchPurchases();
-                    
-                    // Note: The actual restore event will be posted from OnPurchasesFetched
-                    // after all purchases have been processed
-                }
-                else
-                {
-                    Debug.LogError($"UnityIAPProvider: Restore purchases failed: {error}");
+                    m_AwaitingRestorePurchasesFetch = false;
                     EventBus<RestorePurchaseEvent>.Post(new RestorePurchaseEvent(false, error));
+                    Debug.LogError($"UnityIAPProvider: Restore purchases failed: {error}");
+                    return;
                 }
+
+                // Refresh purchase cache first so IsPurchased() is accurate for game sync.
+                m_PendingRestoreMessage = error;
+                m_AwaitingRestorePurchasesFetch = true;
+                m_StoreController.FetchPurchases();
             });
-            
             return UniTask.CompletedTask;
         }
 
@@ -362,23 +337,47 @@ namespace Tito.Services.IAP.Provider
         {
             if (m_StoreController == null)
             {
-                Debug.LogError("StoreController is not initialized. Please initialize the IAP provider first.");
+                Debug.LogError(
+                    "StoreController is not initialized. Please initialize the IAP provider first.");
                 return false;
             }
 
-            var activePurchases = m_StoreController.GetPurchases();
-            foreach (var purchase in activePurchases)
+            if (string.IsNullOrEmpty(productId))
+                return false;
+
+            foreach (var purchase in m_StoreController.GetPurchases())
             {
-                // Dig into the purchase information details
-                foreach (var purchasedProductInfo in purchase.Info.PurchasedProductInfo)
+                if (purchase?.Info?.PurchasedProductInfo != null)
                 {
-                    string ownedProductId = purchasedProductInfo.productId;
-                    if (ownedProductId == productId)
+                    foreach (var purchasedProductInfo in purchase.Info.PurchasedProductInfo)
                     {
-                        return true;
+                        if (purchasedProductInfo.productId == productId)
+                            return true;
                     }
                 }
+
+                if (purchase?.CartOrdered == null)
+                    continue;
+
+                foreach (var item in purchase.CartOrdered.Items())
+                {
+                    if (item == null)
+                        continue;
+
+                    if (string.Equals(item.CatalogListingId, productId, StringComparison.Ordinal))
+                        return true;
+
+                    var definition = item.Product?.definition;
+                    if (definition == null)
+                        continue;
+
+                    if (string.Equals(definition.catalogListingId, productId, StringComparison.Ordinal) ||
+                        string.Equals(definition.id, productId, StringComparison.Ordinal) ||
+                        string.Equals(definition.storeSpecificId, productId, StringComparison.Ordinal))
+                        return true;
+                }
             }
+
             return false;
         }
 
@@ -386,77 +385,61 @@ namespace Tito.Services.IAP.Provider
         {
             if (m_StoreController == null)
             {
-                Debug.LogError("StoreController is not initialized. Please initialize the IAP provider first.");
+                Debug.LogError(
+                    "StoreController is not initialized. Please initialize the IAP provider first.");
                 return string.Empty;
             }
 
             var product = m_StoreController.GetProductById(productId);
             if (product != null)
-            {
                 return product.metadata.localizedPriceString;
-            }
-            else
-            {
-                Debug.LogWarning($"Product with ID {productId} not found.");
-                return string.Empty;
-            }
+
+            Debug.LogWarning($"Product with ID {productId} not found.");
+            return string.Empty;
         }
 
         public override decimal GetPrice(string productId)
         {
             if (m_StoreController == null)
             {
-                Debug.LogError("StoreController is not initialized. Please initialize the IAP provider first.");
+                Debug.LogError(
+                    "StoreController is not initialized. Please initialize the IAP provider first.");
                 return 0m;
             }
 
             var product = m_StoreController.GetProductById(productId);
             if (product != null)
-            {
                 return product.metadata.localizedPrice;
-            }
-            else
-            {
-                Debug.LogWarning($"Product with ID {productId} not found.");
-                return 0m;
-            }
+
+            Debug.LogWarning($"Product with ID {productId} not found.");
+            return 0m;
         }
 
         public override string GetCurrencyCode(string productId)
         {
             if (m_StoreController == null)
             {
-                Debug.LogError("StoreController is not initialized. Please initialize the IAP provider first.");
+                Debug.LogError(
+                    "StoreController is not initialized. Please initialize the IAP provider first.");
                 return string.Empty;
             }
 
             var product = m_StoreController.GetProductById(productId);
             if (product != null)
-            {
                 return product.metadata.isoCurrencyCode;
-            }
-            else
-            {
-                Debug.LogWarning($"Product with ID {productId} not found.");
-                return string.Empty;
-            }
+
+            Debug.LogWarning($"Product with ID {productId} not found.");
+            return string.Empty;
         }
-        
+
         private UnityEngine.Purchasing.ProductType Convert(ProductType type)
         {
             return type switch
             {
-                ProductType.Consumable =>
-                    UnityEngine.Purchasing.ProductType.Consumable,
-
-                ProductType.NonConsumable =>
-                    UnityEngine.Purchasing.ProductType.NonConsumable,
-
-                ProductType.Subscription =>
-                    UnityEngine.Purchasing.ProductType.Subscription,
-
-                _ =>
-                    UnityEngine.Purchasing.ProductType.Consumable
+                ProductType.Consumable => UnityEngine.Purchasing.ProductType.Consumable,
+                ProductType.NonConsumable => UnityEngine.Purchasing.ProductType.NonConsumable,
+                ProductType.Subscription => UnityEngine.Purchasing.ProductType.Subscription,
+                _ => UnityEngine.Purchasing.ProductType.Consumable
             };
         }
     }
