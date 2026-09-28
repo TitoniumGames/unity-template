@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using Cysharp.Threading.Tasks;
@@ -123,10 +123,10 @@ namespace Tito.Services.IAP.Provider
                 }
 
                 Debug.Log($"UnityIAPProvider: Treating {reason} as owned restore for {productId}");
-                EventBus<PurchaseSuccessEvent>.Post(new PurchaseSuccessEvent(
+                EventBus<PurchaseFailedEvent>.Post(new PurchaseFailedEvent(
                     productId,
-                    $"restore:{reason}",
-                    string.Empty));
+                    PurchaseStatus.Failed,
+                    reason.ToString()));
                 return;
             }
 
@@ -189,6 +189,11 @@ namespace Tito.Services.IAP.Provider
                 Debug.LogError(
                     $"Purchase failed for product: {failedOrder.Info}, reason: {failedOrder.FailureReason}");
                 m_IsPurchaseInProgress = false;
+                
+                EventBus<PurchaseFailedEvent>.Post(new PurchaseFailedEvent(
+                    failedOrder.CartOrdered?.Items().FirstOrDefault()?.Product?.definition?.catalogListingId ?? "unknown",
+                    PurchaseStatus.Failed,
+                    failedOrder.FailureReason.ToString()));
                 return;
             }
 
@@ -198,6 +203,11 @@ namespace Tito.Services.IAP.Provider
             {
                 Debug.LogError("Purchase confirmed but product id is missing.");
                 m_IsPurchaseInProgress = false;
+                
+                EventBus<PurchaseFailedEvent>.Post(new PurchaseFailedEvent(
+                    productId ?? "unknown",
+                    PurchaseStatus.Failed,
+                    "Purchase confirmed but product id is missing."));
                 return;
             }
 
