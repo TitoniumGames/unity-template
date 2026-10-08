@@ -19,8 +19,10 @@ namespace GameTemplate.Runtime.Core
     public class GameManager: Singleton<GameManager>
     {
         [SerializeField] private ApplicationSettings applicationSettings;
-        
-        public bool IsInitializeOnStart => true;
+
+        public bool IsInitializeOnStart;
+
+        public bool InitSettings;
         
         public GameState CurrentState { get; private set; } = GameState.Playing;
         
@@ -119,7 +121,10 @@ namespace GameTemplate.Runtime.Core
 
             Application.targetFrameRate = applicationSettings.TargetFPS;
 
-            SettingManager.Instance.Sync();
+            if (InitSettings)
+            {
+                SettingManager.Instance.Sync();
+            }
 
             _gameplayTimer = GameplayTime.Instance;
 
